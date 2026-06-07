@@ -18,3 +18,15 @@ __pycache__/
 
 # Node
 node_modules/
+
+# 회의 녹음 원본 + 전사 원문 (커밋 제외)
+*.m4a
+*.mp3
+*.mp4
+*.wav
+*.aac
+*.flac
+*.ogg
+*.opus
+*.m4b
+meetings/.transcripts/
