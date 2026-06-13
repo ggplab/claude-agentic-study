@@ -23,7 +23,7 @@
 
 ### 주간 흐름 (두 규칙)
 
-1. **참여자**: 모임 전까지 그 챕터의 `chapters/chNN/README.md`에 **기본글**(고른 개념 / 리마인드 / 의미)을 쓰고, **LinkedIn에 포스팅**한다.
+1. **참여자**: 모임 전까지 그 챕터의 `chapters/chNN/README.md`에 **기본글**(고른 개념 / 리마인드 / 의미)을 쓰고, **LinkedIn에 포스팅**한다. → Claude Code에서 `/study-chapter <챕터번호>`에 읽기 메모를 붙여넣으면 개념정리 + 본인 클로드 시스템 적용예시 실측 + 기본글 + LinkedIn 초안까지 만들어 정리본만 푸시해준다. 원본 메모·초안은 `_drafts/`(gitignore)에 로컬로만 남는다. (스킬: [`.claude/skills/study-chapter`](.claude/skills/study-chapter/SKILL.md))
 2. **리더**: **일요일 오후**에 참여자들이 올린 글을 보고 **발표 순서를 조정**한다. → Claude Code에서 `/order-session <챕터번호>` 실행하면 자동으로 글을 읽어 중복 점검 + 순서 제안 + README 기록까지 해준다. (스킬: [`.claude/skills/order-session`](.claude/skills/order-session/SKILL.md))
 
 ```
@@ -46,7 +46,7 @@
 | 챕터 | 리드 | 제목 | 상태 | 기록 |
 |------|------|------|------|------|
 | 01 | 문종운 | (확정 예정) | 예정 | [ch01](chapters/ch01/README.md) |
-| 02 | 남서아 | (확정 예정) | 예정 | — |
+| 02 | 남서아 | (확정 예정) | 예정 | [ch02](chapters/ch02/README.md) |
 | 03 | 이정연 | (확정 예정) | 예정 | — |
 | 04 | 임정 | (확정 예정) | 예정 | — |
 | 05 | 최지환 | (확정 예정) | 예정 | — |
