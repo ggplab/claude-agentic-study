@@ -54,10 +54,11 @@ disable-model-invocation: true
 - 말미에 "발행 후 링크를 챕터 README에 기록" 체크리스트 한 줄
 
 ### 8. 배포 (정리본만)
-1. `git status --short`로 변경 파일 확인. `_drafts/` 경로가 목록에 보이면 **멈추고** gitignore부터 고친다.
-2. 스테이징은 명시 경로만: `chapters/chNN/` 하위 정리본·README (+ 필요 시 `.gitignore`). `git add -A` 금지.
-3. `git diff --cached --stat`을 사용자에게 보여주고 커밋·푸시한다. 커밋 메시지 예: `docs(ch02): 임정 2장 정리 + 기본글`
-4. **검증**: 푸시 후 `git ls-files _drafts/ | wc -l`이 0인지 확인하고 결과를 보고한다.
+1. **진행 현황 갱신 제안 (루트 README)**: 루트 `README.md`의 "진행 현황" 표에서 이 챕터의 **상태** 갱신 여부를 사용자에게 묻는다(예: `예정` → `완료`). 승인 시 `상태` 칸(필요 시 `제목`·`기록` 링크)을 갱신해 아래 커밋에 함께 포함하고, 거절 시 표는 그대로 둔다. **묻지 않고 임의로 바꾸지 않는다.** (프로젝트 `CLAUDE.md`의 진행 현황 갱신 규칙과 동일.)
+2. `git status --short`로 변경 파일 확인. `_drafts/` 경로가 목록에 보이면 **멈추고** gitignore부터 고친다.
+3. 스테이징은 명시 경로만: `chapters/chNN/` 하위 정리본·README (+ 필요 시 `.gitignore`, 진행 현황 갱신 시 루트 `README.md`). `git add -A` 금지.
+4. `git diff --cached --stat`을 사용자에게 보여주고 커밋·푸시한다. 커밋 메시지 예: `docs(ch02): 임정 2장 정리 + 기본글`
+5. **검증**: 푸시 후 `git ls-files _drafts/ | wc -l`이 0인지 확인하고 결과를 보고한다.
 
 ### 9. 요약 출력
 - 푸시된 파일 / 로컬에만 남은 파일 목록
