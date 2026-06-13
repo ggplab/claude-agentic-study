@@ -10,7 +10,7 @@ disable-model-invocation: true
 너는 스터디 참여자의 주간 흐름을 자동화한다: **읽기 → 개념정리 → 내 클로드 시스템 적용예시 파악 → 포스팅 초안 → 정리본만 푸시**.
 
 핵심 원칙 두 가지:
-1. **작업 파일은 로컬에만**: 원본 메모·포스팅 초안은 `chapters/chNN/<이름>/_drafts/`에 둔다 (`.gitignore`의 `_drafts/`로 커밋 제외). 푸시되는 것은 정리본과 챕터 README 기본글뿐.
+1. **작업 파일은 로컬에만**: 원본 메모·포스팅 초안은 **리포 루트 `_drafts/`**에 `chNN-` 접두 파일명으로 둔다 (`.gitignore`의 `_drafts/`로 커밋 제외, 뎁스 깊은 하위 폴더 금지). 푸시되는 것은 정리본과 챕터 README 기본글뿐.
 2. **적용예시는 실측, 추정 금지**: 사용자의 실제 설정 파일을 읽고 확인된 사실만 쓴다.
 
 ## 입력
@@ -24,8 +24,8 @@ disable-model-invocation: true
 `date +%Y-%m-%d` 실행 (날짜 추정 금지). `chapters/_TEMPLATE.md` 존재 확인.
 
 ### 2. 원본 메모 보존 (로컬 전용)
-`chapters/chNN/<이름>/_drafts/raw-notes-<날짜>.md`에 메모를 **원문 그대로** 저장한다 (오타 포함, 가공 금지).
-**검증**: `git check-ignore chapters/chNN/<이름>/_drafts/raw-notes-<날짜>.md`가 경로를 출력해야 한다. 출력이 없으면 `.gitignore`에 `_drafts/`를 추가한 뒤 재확인하고 다음 단계로.
+리포 루트 `_drafts/chNN-raw-notes-<날짜>.md`에 메모를 **원문 그대로** 저장한다 (오타 포함, 가공 금지).
+**검증**: `git check-ignore _drafts/chNN-raw-notes-<날짜>.md`가 경로를 출력해야 한다. 출력이 없으면 `.gitignore`에 `_drafts/`를 추가한 뒤 재확인하고 다음 단계로.
 
 ### 3. 개념정리
 메모의 절 구조를 유지하면서 각 절을 정리한다.
@@ -48,7 +48,7 @@ disable-model-invocation: true
 **다른 참여자의 섹션은 절대 수정·삭제하지 않는다.**
 
 ### 7. LinkedIn 초안 (로컬 전용)
-`chapters/chNN/<이름>/_drafts/linkedin-draft.md`에 작성. 톤 규칙 (루트 README 준수):
+리포 루트 `_drafts/chNN-linkedin-draft.md`에 작성. 톤 규칙 (루트 README 준수):
 - 대괄호 제목 금지, 정제된 존댓말, 번호 리스트로 구조화, 해시태그 금지, em dash(—) 금지
 - 개념 설명과 본인 경험·적용을 한 덩어리로
 - 말미에 "발행 후 링크를 챕터 README에 기록" 체크리스트 한 줄
@@ -57,7 +57,7 @@ disable-model-invocation: true
 1. `git status --short`로 변경 파일 확인. `_drafts/` 경로가 목록에 보이면 **멈추고** gitignore부터 고친다.
 2. 스테이징은 명시 경로만: `chapters/chNN/` 하위 정리본·README (+ 필요 시 `.gitignore`). `git add -A` 금지.
 3. `git diff --cached --stat`을 사용자에게 보여주고 커밋·푸시한다. 커밋 메시지 예: `docs(ch02): 임정 2장 정리 + 기본글`
-4. **검증**: 푸시 후 `git ls-files chapters/chNN/<이름>/`에 `_drafts` 파일이 0건인지 확인하고 결과를 보고한다.
+4. **검증**: 푸시 후 `git ls-files _drafts/ | wc -l`이 0인지 확인하고 결과를 보고한다.
 
 ### 9. 요약 출력
 - 푸시된 파일 / 로컬에만 남은 파일 목록
