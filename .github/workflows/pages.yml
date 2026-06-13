@@ -36,11 +36,9 @@ jobs:
       - name: Build site
         working-directory: site
         run: npm run build
+      # Pages는 org admin이 1회 수동 활성화해야 한다(Settings → Pages → Source = "GitHub Actions").
+      # 활성화 후에는 이 단계(GET)가 통과하며 배포가 진행된다.
       - uses: actions/configure-pages@v5
-        with:
-          # 워크플로의 GITHUB_TOKEN(pages:write)으로 Pages 최초 활성화를 시도.
-          # 조직/저장소 설정이 허용하면 admin 수동 설정 없이 자동 활성화된다.
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
