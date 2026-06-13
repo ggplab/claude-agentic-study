@@ -11,7 +11,7 @@
 ### 임정 — IAM (권한 관리)
 - **내용 리마인드**: 에이전트에게 허용(allow)·거부(deny)할 행동을 settings.json permissions로 선언하는 권한 체계. allow/deny/ask 리스트와 permission mode로 구성.
 - **나에게 어떤 의미였나**: 내 글로벌 설정에 deny 21건(`rm -rf`, `sudo`, `git push --force`, `DROP TABLE`, 토큰 export 차단)을 먼저 등록해두고, 그 위에서 allow를 폭넓게 열어 권한 프롬프트를 줄이고 있었다. 책을 읽고 이 구조가 "자율성은 권한 설계 다음"이라는 순서였음을 정리하게 됐다. deny가 단단할수록 allow를 과감하게 넓힐 수 있다. (상세 정리: [임정/README.md](임정/README.md))
-- **LinkedIn**: (발행 후 링크)
+- **LinkedIn**: 게시 본문 초안 [임정/linkedin-5tools.md](임정/linkedin-5tools.md) (트리거 3분류로 본 도구 5가지) · 발행 후 링크 기입 예정
 
 ### <이름> — <고른 개념>
 - **내용 리마인드**:
