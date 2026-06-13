@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CH02 — 워크플로와 설정</title>
+<style>
+  /* ── 리셋 & 기본 ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --accent:    #58a6ff;
+    --accent2:   #3fb950;
+    --warn:      #f0883e;
+    --danger:    #f85149;
+    --muted:     #8b949e;
+    --text:      #e6edf3;
+    --text-sub:  #b1bac4;
+    --code-bg:   #1c2128;
+    --chip-bg:   #1f3a5f;
+    --chip-text: #79c0ff;
+    --progress:  #238636;
+    --font-sys:  -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                 Arial, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas,
+                 "Courier New", monospace;
+    --radius:    8px;
+    --slide-w:   min(100vw, 1200px);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sys);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── 진행률 바 ── */
+  #progress-bar-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 100;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.35s ease;
+    width: 0%;
+  }
+
+  /* ── 슬라이드 컨테이너 ── */
+  #deck {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 64px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  /* ── 클릭 영역 ── */
+  #click-prev {
+    position: fixed;
+    top: 0; left: 0;
+    width: 40%; height: 100%;
+    z-index: 10;
+    cursor: w-resize;
+  }
+  #click-next {
+    position: fixed;
+    top: 0; right: 0;
+    width: 60%; height: 100%;
+    z-index: 10;
+    cursor: e-resize;
+  }
+
+  /* ── 슬라이드 카운터 ── */
+  #counter {
+    position: fixed;
+    bottom: 20px; right: 28px;
+    font-size: 13px;
+    color: var(--muted);
+    z-index: 50;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── 내용 컨테이너 ── */
+  .slide-inner {
+    width: 100%;
+    max-width: 900px;
+    position: relative;
+    z-index: 20;
+  }
+
+  /* ── 타이포 ── */
+  .slide-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+
+  .slide-title {
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .slide-title .accent { color: var(--accent); }
+  .slide-title .accent2 { color: var(--accent2); }
+
+  .slide-subtitle {
+    font-size: clamp(14px, 2vw, 20px);
+    color: var(--text-sub);
+    margin-bottom: 32px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .slide-lead {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 36px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .slide-lead span { display: flex; align-items: center; gap: 6px; }
+  .slide-lead .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* ── 불릿 목록 ── */
+  .bullets {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bullets li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: clamp(14px, 1.8vw, 18px);
+    line-height: 1.6;
+    color: var(--text-sub);
+  }
+  .bullets li .bi {
+    flex-shrink: 0;
+    margin-top: 4px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .bullets li strong, .bullets li b {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .bullets.sub li .bi { background: var(--muted); width: 5px; height: 5px; margin-top: 6px; }
+  .bullets.sub li { font-size: clamp(13px, 1.5vw, 16px); color: var(--muted); }
+
+  /* ── 코드/chip 스타일 ── */
+  code, .chip {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 4px;
+    padding: 1px 7px;
+    white-space: nowrap;
+  }
+  .chip-warn {
+    background: rgba(240,136,62,0.15);
+    color: var(--warn);
+    border-color: rgba(240,136,62,0.3);
+  }
+  .chip-green {
+    background: rgba(63,185,80,0.12);
+    color: var(--accent2);
+    border-color: rgba(63,185,80,0.25);
+  }
+  .chip-danger {
+    background: rgba(248,81,73,0.12);
+    color: var(--danger);
+    border-color: rgba(248,81,73,0.3);
+  }
+
+  /* ── 섹션 헤더 ── */
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(88,166,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin-bottom: 18px;
+  }
+
+  /* ── 주석(footnote) ── */
+  .footnote {
+    margin-top: 24px;
+    padding: 10px 16px;
+    border-left: 3px solid var(--warn);
+    background: rgba(240,136,62,0.07);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13px;
+    color: var(--warn);
+    line-height: 1.55;
+  }
+  .footnote strong { color: var(--warn); }
+  .footnote-danger {
+    border-left-color: var(--danger);
+    background: rgba(248,81,73,0.07);
+    color: var(--danger);
+  }
+  .footnote-danger strong { color: var(--danger); }
+
+  /* ── 2열 그리드 ── */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+  }
+  .col-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+  }
+  .col-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .col-card .num {
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── 테이블 ── */
+  .table-wrap {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 62vh;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(11px, 1.2vw, 13px);
+  }
+  thead th {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.018); }
+  tbody td {
+    padding: 9px 14px;
+    color: var(--text-sub);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tbody td:first-child {
+    font-family: var(--font-mono);
+    color: var(--chip-text);
+    white-space: nowrap;
+    font-size: 0.9em;
+  }
+
+  /* ── 루프 다이어그램 ── */
+  .loop-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .loop-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-size: clamp(13px, 1.5vw, 16px);
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    min-width: 110px;
+  }
+  .loop-node.hl { border-color: var(--accent); color: var(--accent); }
+  .loop-arrow {
+    font-size: 20px;
+    color: var(--muted);
+    padding: 0 6px;
+  }
+  .loop-back {
+    display: block;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 큰 인용 ── */
+  .big-quote {
+    font-size: clamp(22px, 3.5vw, 44px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    text-align: center;
+  }
+  .big-quote .hl { color: var(--accent2); }
+  .big-quote .hl2 { color: var(--accent); }
+
+  /* ── 계층 목록 ── */
+  .hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hier-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+  }
+  .hier-num {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .hier-content { flex: 1; }
+  .hier-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .hier-desc { font-size: 13px; color: var(--muted); }
+  .hier-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warn);
+    background: rgba(240,136,62,0.12);
+    border: 1px solid rgba(240,136,62,0.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .hier-badge.green {
+    color: var(--accent2);
+    background: rgba(63,185,80,0.1);
+    border-color: rgba(63,185,80,0.25);
+  }
+
+  /* ── 배경 장식 ── */
+  .bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-glow-1 {
+    width: 600px; height: 600px;
+    background: var(--accent);
+    top: -200px; right: -200px;
+  }
+  .bg-glow-2 {
+    width: 500px; height: 500px;
+    background: var(--accent2);
+    bottom: -200px; left: -150px;
+  }
+
+  /* ── 반응형 ── */
+  @media (max-width: 768px) {
+    .slide { padding: 36px 28px; }
+    .cols { grid-template-columns: 1fr; gap: 14px; }
+    #counter { bottom: 14px; right: 16px; }
+    .loop-flow { gap: 0; }
+    .loop-node { min-width: 80px; padding: 10px 12px; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 18px; }
+  }
+
+  /* ── 키 힌트 ── */
+  #key-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 28px;
+    font-size: 11px;
+    color: var(--border);
+    z-index: 50;
+    letter-spacing: 0.03em;
+  }
+
+  /* ════════════════════════════════════════
+     애니메이션 — git worktree 비교
+  ════════════════════════════════════════ */
+
+  /* 공통: 에이전트 토큰 박스 */
+  .agent-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+  .agent-a {
+    background: rgba(88,166,255,0.15);
+    border: 1px solid rgba(88,166,255,0.5);
+    color: var(--accent);
+  }
+  .agent-b {
+    background: rgba(63,185,80,0.15);
+    border: 1px solid rgba(63,185,80,0.5);
+    color: var(--accent2);
+  }
+
+  /* ── 왼쪽: worktree 미사용 (충돌 카드) ── */
+  .wt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 260px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .wt-card.danger-card { border-color: rgba(248,81,73,0.35); }
+  .wt-card.safe-card   { border-color: rgba(63,185,80,0.35); }
+
+  .wt-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .wt-label.danger { background: rgba(248,81,73,0.12); color: var(--danger); border: 1px solid rgba(248,81,73,0.3); }
+  .wt-label.safe   { background: rgba(63,185,80,0.10); color: var(--accent2); border: 1px solid rgba(63,185,80,0.25); }
+
+  /* 파일 아이콘 */
+  .file-icon {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+
+  /* 충돌 화살표 — 두 에이전트가 같은 파일로 수렴 */
+  .conflict-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .conflict-arrows {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    align-items: flex-end;
+    height: 36px;
+    position: relative;
+  }
+  .arrow-left-in {
+    width: 44px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--danger));
+    transform-origin: right center;
+    transform: rotate(-25deg);
+    margin-bottom: 10px;
+  }
+  .arrow-right-in {
+    width: 44px; height: 2px;
+    background: linear-gradient(270deg, transparent, var(--danger));
+    transform-origin: left center;
+    transform: rotate(25deg);
+    margin-bottom: 10px;
+  }
+
+  /* 충돌 경고 펄스 — 핵심 애니메이션 */
+  @keyframes conflict-pulse {
+    0%   { opacity: 1; transform: scale(1);    color: var(--danger); }
+    40%  { opacity: 0.5; transform: scale(0.92); color: #ff6b6b; }
+    60%  { opacity: 1; transform: scale(1.06); color: var(--danger); }
+    80%  { opacity: 0.6; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1);    color: var(--danger); }
+  }
+  @keyframes conflict-bg-pulse {
+    0%, 100% { background: rgba(248,81,73,0.08); border-color: rgba(248,81,73,0.35); }
+    50%      { background: rgba(248,81,73,0.22); border-color: rgba(248,81,73,0.8); }
+  }
+  .conflict-badge {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.01em;
+  }
+  /* 슬라이드가 active일 때만 애니메이션 실행 */
+  .slide.active .conflict-badge {
+    animation: conflict-pulse 1.6s ease-in-out infinite;
+  }
+  .slide.active .wt-card.danger-card {
+    animation: conflict-bg-pulse 1.6s ease-in-out infinite;
+  }
+
+  /* 에이전트 진입 — 오른쪽 안전 카드 */
+  @keyframes slide-in-a {
+    0%   { opacity: 0; transform: translateX(-28px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-in-b {
+    0%   { opacity: 0; transform: translateX(28px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); }
+    50%       { box-shadow: 0 0 0 6px rgba(63,185,80,0.15); }
+  }
+  @keyframes merge-glow {
+    0%, 100% { opacity: 0.5; transform: scaleX(0.9); }
+    50%       { opacity: 1;   transform: scaleX(1); }
+  }
+
+  .safe-agent-a {
+    align-self: flex-start;
+  }
+  .safe-agent-b {
+    align-self: flex-end;
+  }
+  .slide.active .safe-agent-a {
+    animation: slide-in-a 0.7s ease-out both,
+               pulse-green 2.2s ease-in-out 0.7s infinite;
+  }
+  .slide.active .safe-agent-b {
+    animation: slide-in-b 0.7s ease-out 0.25s both,
+               pulse-green 2.2s ease-in-out 1s infinite;
+  }
+
+  /* 격리된 폴더 박스 */
+  .folder-box {
+    background: rgba(30,40,52,0.8);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .folder-label {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  /* git remote 공유 표시 */
+  .git-remote-bar {
+    background: rgba(88,166,255,0.08);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--accent);
+    text-align: center;
+    width: 100%;
+  }
+  @keyframes remote-glow {
+    0%, 100% { background: rgba(88,166,255,0.08); border-color: rgba(88,166,255,0.2); }
+    50%       { background: rgba(88,166,255,0.16); border-color: rgba(88,166,255,0.5); }
+  }
+  .slide.active .git-remote-bar {
+    animation: remote-glow 2.5s ease-in-out infinite;
+  }
+
+  /* merge 노트 */
+  .merge-note {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  /* ── 모델 비교 바 차트 ── */
+  .model-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .model-bar-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    width: 68px;
+    flex-shrink: 0;
+    color: var(--text);
+  }
+  .model-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--code-bg);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+  .model-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.8s ease;
+  }
+  .model-bar-meta {
+    font-size: 11px;
+    color: var(--muted);
+    width: 130px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* ── permissions 3열 ── */
+  .perm-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+  }
+  .perm-card {
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .perm-card.deny  { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.3); }
+  .perm-card.ask   { background: rgba(240,136,62,0.08); border: 1px solid rgba(240,136,62,0.3); }
+  .perm-card.allow { background: rgba(63,185,80,0.07);  border: 1px solid rgba(63,185,80,0.25); }
+  .perm-card-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .perm-card.deny  .perm-card-title { color: var(--danger); }
+  .perm-card.ask   .perm-card-title { color: var(--warn); }
+  .perm-card.allow .perm-card-title { color: var(--accent2); }
+  .perm-item {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 3px 7px;
+    border-radius: 3px;
+  }
+  .perm-card.deny  .perm-item { background: rgba(248,81,73,0.1);  color: #ff9999; }
+  .perm-card.ask   .perm-item { background: rgba(240,136,62,0.1); color: var(--warn); }
+  .perm-card.allow .perm-item { background: rgba(63,185,80,0.09); color: var(--accent2); }
+
+  @media (max-width: 768px) {
+    .perm-cols { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 배경 글로우 -->
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- 진행률 바 -->
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+
+<!-- 클릭 내비 영역 -->
+<div id="click-prev" onclick="navigate(-1)"></div>
+<div id="click-next" onclick="navigate(1)"></div>
+
+<!-- 슬라이드 카운터 -->
+<div id="counter">1 / 18</div>
+
+<!-- 키 힌트 -->
+<div id="key-hint">← → Space · 좌/우 클릭</div>
+
+<!-- ══════════════════════════════════════════════
+     슬라이드 덱
+══════════════════════════════════════════════ -->
+<div id="deck">
+
+  <!-- ─────────────── SLIDE 1 : 타이틀 ─────────────── -->
+  <div class="slide active" id="s1">
+    <div class="slide-inner">
+      <div class="slide-tag">Claude Code Agentic Study · 2026</div>
+      <h1 class="slide-title">
+        CHAPTER 02<br>
+        <span class="accent">워크플로</span>와 <span class="accent2">설정</span>
+      </h1>
+      <p class="slide-subtitle">
+        워크플로 패턴 · 권한 설계 · 모델 선택 · 병렬 에이전트 안전 실행
+      </p>
+      <div class="slide-lead">
+        <span><span class="dot"></span>리드: 남서아</span>
+        <span><span class="dot" style="background:var(--accent)"></span>정리: 문종운</span>
+        <span><span class="dot" style="background:var(--muted)"></span>총 18 슬라이드</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 2 : 탐색–계획–구현–커밋 워크플로 ─────────────── -->
+  <div class="slide" id="s2">
+    <div class="slide-inner">
+      <div class="section-label">핵심 워크플로</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><span class="accent">탐색 → 계획 → 구현 → 커밋</span></h2>
+      <p class="slide-subtitle">클로드 코드의 기본 작업 사이클</p>
+      <div class="loop-flow" style="margin-top:20px">
+        <div class="loop-node hl">탐색<br><small style="font-size:11px;color:var(--muted)">Explore</small></div>
+        <div class="loop-arrow">→</div>
+        <div class="loop-node">계획<br><small style="font-size:11px;color:var(--muted)">Plan</small></div>
+        <div class="loop-arrow">→</div>
+        <div class="loop-node">구현<br><small style="font-size:11px;color:var(--muted)">Implement</small></div>
+        <div class="loop-arrow">→</div>
+        <div class="loop-node" style="border-color:var(--accent2);color:var(--accent2)">커밋<br><small style="font-size:11px;color:var(--muted)">Commit</small></div>
+      </div>
+      <span class="loop-back">↩ 검증 실패 시 탐색·계획 단계로 되돌아가 반복</span>
+      <ul class="bullets" style="margin-top:24px">
+        <li>
+          <span class="bi"></span>
+          <span>사람은 방향만 잡는다 — <strong>나머지는 AI가 자율 수행</strong></span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>각 단계가 다음 단계의 입력 — 컨텍스트가 누적될수록 더 정확한 구현</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 3 : shift-tab 수행 모드 ─────────────── -->
+  <div class="slide" id="s3">
+    <div class="slide-inner">
+      <div class="section-label">수행 모드</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><code style="font-size:0.65em">Shift+Tab</code>으로 <span class="accent">4가지 모드</span> 전환</h2>
+      <div class="hierarchy" style="margin-top:18px">
+        <div class="hier-row">
+          <div class="hier-num">1</div>
+          <div class="hier-content">
+            <div class="hier-title">기본 모드</div>
+            <div class="hier-desc">매 도구 호출마다 사용자 승인 요청</div>
+          </div>
+          <div class="hier-badge green">Default</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">2</div>
+          <div class="hier-content">
+            <div class="hier-title">Plan Mode</div>
+            <div class="hier-desc">구현 전 계획만 작성 — 코드 변경 없이 탐색·설계만 수행</div>
+          </div>
+          <div class="hier-badge" style="color:var(--accent);background:rgba(88,166,255,0.1);border-color:rgba(88,166,255,0.25)">안전</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">3</div>
+          <div class="hier-content">
+            <div class="hier-title">Accept Edits</div>
+            <div class="hier-desc">파일 편집은 자동 승인, Bash 등 위험 명령은 여전히 묻는다</div>
+          </div>
+          <div class="hier-badge">반자동</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">4</div>
+          <div class="hier-content">
+            <div class="hier-title">Auto Mode</div>
+            <div class="hier-desc">모든 도구 자동 승인 — 가장 빠르나 가장 위험</div>
+          </div>
+          <div class="hier-badge">주의</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 4 : 점진적 탐색 & 컨텍스트 절약 ─────────────── -->
+  <div class="slide" id="s4">
+    <div class="slide-inner">
+      <div class="section-label">컨텍스트 효율</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><span class="accent">점진적 탐색</span>으로 토큰 절약</h2>
+      <p class="slide-subtitle">탐색 범위를 단계적으로 좁혀 컨텍스트 소모 최소화</p>
+      <div style="margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em">탐색 흐름 (좁아질수록 토큰 ↓)</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="chip chip-warn">전체 파일 목록</span>
+          <span style="color:var(--muted)">→</span>
+          <span class="chip">관련 디렉터리</span>
+          <span style="color:var(--muted)">→</span>
+          <span class="chip">핵심 파일 frontmatter</span>
+          <span style="color:var(--muted)">→</span>
+          <span class="chip chip-green">필요한 섹션만</span>
+        </div>
+      </div>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span><strong>범위가 좁아질수록</strong> 컨텍스트 플로우가 줄고 토큰 절약</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>frontmatter 요약 → 필요한 순간에만 본문 — <strong>점진적 공개</strong>와 연계</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>컨텍스트 80% 이상 사용 시 품질 저하 — <strong>조기에 좁혀라</strong></span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 5 : 피드백 루프 — 클로드 코드 vs Fable ─────────────── -->
+  <div class="slide" id="s5">
+    <div class="slide-inner">
+      <div class="section-label">피드백 루프 철학</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">검증 견고화</span> vs <span class="accent2">선택지 확장</span></h2>
+      <div class="cols" style="margin-top:20px">
+        <div class="col-card" style="border-color:rgba(88,166,255,0.4)">
+          <h3 style="color:var(--accent)">클로드 코드 방식</h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi" style="background:var(--accent)"></span><span>권한·훅·TDD로 <strong style="color:var(--text)">검증을 견고하게</strong></span></li>
+            <li><span class="bi" style="background:var(--accent)"></span><span>실행 전 확인 단계 강제</span></li>
+            <li><span class="bi" style="background:var(--accent)"></span><span>잘못된 방향 조기 차단</span></li>
+            <li><span class="bi" style="background:var(--accent)"></span><span><strong style="color:var(--text)">안전성 ↑</strong>, 속도는 다소 낮음</span></li>
+          </ul>
+        </div>
+        <div class="col-card" style="border-color:rgba(63,185,80,0.35);opacity:0.7">
+          <h3 style="color:var(--accent2)">Fable 방식 <span style="font-size:10px;color:var(--muted);font-weight:400">(실험적)</span></h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi" style="background:var(--accent2)"></span><span>제약 줄이고 <strong style="color:var(--text)">선택지를 열어 둠</strong></span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span>더 넓은 탐색·실험 가능</span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span>컨텍스트 로트 부분 해소</span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span><strong style="color:var(--text)">자율도 ↑</strong>, 검증 책임 이동</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        <strong>※ 미확인 / 지원 중단 가능성</strong> — Fable 모델은 스터디 중 "지원 중단" 이슈가 제기됨. 실험 환경에서도 확인 불가 상태. 아카이브 기준으로만 기록.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 6 : TDD ─────────────── -->
+  <div class="slide" id="s6">
+    <div class="slide-inner">
+      <div class="section-label">TDD</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">에이전틱 환경의 <span class="accent">TDD</span></h2>
+      <p class="slide-subtitle">실패 테스트 → 통과 → 리팩토링</p>
+      <div class="loop-flow" style="margin-top:16px">
+        <div class="loop-node" style="border-color:var(--danger);color:var(--danger)">🔴 실패<br>테스트 작성</div>
+        <div class="loop-arrow">→</div>
+        <div class="loop-node" style="border-color:var(--accent2);color:var(--accent2)">🟢 통과<br>최소 구현</div>
+        <div class="loop-arrow">→</div>
+        <div class="loop-node hl">🔵 리팩<br>토링</div>
+      </div>
+      <span class="loop-back">↩ 반복</span>
+      <ul class="bullets" style="margin-top:24px">
+        <li>
+          <span class="bi"></span>
+          <span>에이전틱 코딩에 특히 효과적 — <strong>검증 케이스를 AI에게 모두 전달</strong>할 수 있다</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>테스트가 <strong>자동화된 피드백 루프</strong>로 작동 — AI가 스스로 통과 여부 확인</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>검증 견고화 원칙과 직결 — 잘못된 구현이 빠르게 드러남</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 7 : worktree 미사용 vs 사용 (애니메이션 비교) ─────────────── -->
+  <div class="slide" id="s7">
+    <div class="slide-inner" style="max-width:960px">
+      <div class="section-label">병렬 에이전트 안전 실행</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.4vw,34px)">git worktree <span class="accent2">미사용</span> vs <span class="accent">사용</span></h2>
+      <div class="cols" style="margin-top:18px;align-items:start">
+
+        <!-- 왼쪽: 미사용 — 충돌 -->
+        <div class="wt-card danger-card">
+          <div class="wt-label danger">worktree 미사용</div>
+          <!-- 에이전트 A·B -->
+          <div style="display:flex;gap:10px;justify-content:center;width:100%">
+            <div class="agent-box agent-a">Agent A</div>
+            <div class="agent-box agent-b">Agent B</div>
+          </div>
+          <!-- 수렴 화살표 -->
+          <div class="conflict-area">
+            <div class="conflict-arrows">
+              <div class="arrow-left-in"></div>
+              <div class="arrow-right-in"></div>
+            </div>
+            <div class="file-icon">📄 feature.ts</div>
+            <div class="conflict-badge">⚠ CONFLICT</div>
+            <div style="font-size:11px;color:var(--danger);text-align:center;line-height:1.4">
+              동시에 같은 파일 수정<br>→ 충돌 발생
+            </div>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 사용 — 안전 -->
+        <div class="wt-card safe-card">
+          <div class="wt-label safe">worktree 사용</div>
+          <!-- 격리 폴더 A -->
+          <div class="folder-box">
+            <div class="folder-label">worktree-A/</div>
+            <div class="safe-agent-a">
+              <div class="agent-box agent-a">Agent A</div>
+            </div>
+            <div class="file-icon" style="font-size:11px">📄 feature.ts (A 전용)</div>
+          </div>
+          <!-- git remote 공유 -->
+          <div class="git-remote-bar">↑ git remote (공유) ↑</div>
+          <!-- 격리 폴더 B -->
+          <div class="folder-box">
+            <div class="folder-label">worktree-B/</div>
+            <div class="safe-agent-b">
+              <div class="agent-box agent-b">Agent B</div>
+            </div>
+            <div class="file-icon" style="font-size:11px">📄 feature.ts (B 전용)</div>
+          </div>
+          <div class="merge-note">각자 격리 → merge 시 conflict 가능<br>→ <strong style="color:var(--accent2)">atomic 단위로 작게 나누면 최소화</strong></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 8 : worktree 실전 — atomic 단위 ─────────────── -->
+  <div class="slide" id="s8">
+    <div class="slide-inner">
+      <div class="section-label">git worktree 실전</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">atomic 단위</span>로 충돌 최소화</h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span><code>git worktree add ../wt-feat-a feat/a</code> — 브랜치별 독립 작업 디렉터리 생성</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>에이전트 A·B가 <strong>서로 다른 worktree에서 동시 작업</strong> — 파일 충돌 원천 차단</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>작업 단위를 <strong>작게 분할(atomic)</strong>할수록 merge 충돌 최소화</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>완료 후 <strong>PR / merge</strong> 시점에 일괄 통합 — 통합 전까지 완전 격리</span>
+        </li>
+      </ul>
+      <div style="margin-top:20px;background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-family:var(--font-mono);font-size:13px;color:var(--text-sub);line-height:1.8">
+        <span style="color:var(--muted)"># worktree 생성 후 에이전트 실행 예시</span><br>
+        <span style="color:var(--accent2)">git worktree add</span> ../wt-a feat/auth<br>
+        <span style="color:var(--accent2)">git worktree add</span> ../wt-b feat/api<br>
+        <span style="color:var(--muted)"># 각 디렉터리에서 독립적으로 claude -p 실행</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 9 : settings.json 개요 ─────────────── -->
+  <div class="slide" id="s9">
+    <div class="slide-inner">
+      <div class="section-label">설정 파일</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><code style="font-size:0.65em">settings.json</code> 개요</h2>
+      <p class="slide-subtitle">클로드 코드의 권한·동작을 선언적으로 제어</p>
+      <div class="cols" style="margin-top:18px">
+        <div class="col-card">
+          <h3><span class="num">①</span>permissions</h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi"></span><span><code>deny</code> — 절대 실행 금지</span></li>
+            <li><span class="bi"></span><span><code>ask</code> — 실행 전 확인</span></li>
+            <li><span class="bi"></span><span><code>allow</code> — 자동 허용</span></li>
+          </ul>
+        </div>
+        <div class="col-card">
+          <h3><span class="num">②</span>hooks</h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi"></span><span>특정 이벤트에 스크립트 자동 실행</span></li>
+            <li><span class="bi"></span><span>예: 커밋 전 lint, 저장 후 테스트</span></li>
+            <li><span class="bi"></span><span>검증 견고화의 핵심 수단</span></li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:16px;background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-family:var(--font-mono);font-size:12px;color:var(--text-sub);line-height:1.8">
+        {<br>
+        &nbsp;&nbsp;<span style="color:var(--accent)">"permissions"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--danger)">"deny"</span>: [<span style="color:#a8d8a8">"Bash(rm -rf:*)"</span>, <span style="color:#a8d8a8">"Bash(git push --f:*)"</span>],<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--accent2)">"allow"</span>: [<span style="color:#a8d8a8">"Read"</span>, <span style="color:#a8d8a8">"Bash(npm test:*)"</span>]<br>
+        &nbsp;&nbsp;}<br>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 10 : permissions 3열 ─────────────── -->
+  <div class="slide" id="s10">
+    <div class="slide-inner" style="max-width:960px">
+      <div class="section-label">permissions</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.4vw,34px)">deny / ask / allow — <span class="accent">색으로 한눈에</span></h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">"이것이 검증을 견고하게 하는 방식" — 위험 명령을 선언적으로 차단</p>
+      <div class="perm-cols">
+        <div class="perm-card deny">
+          <div class="perm-card-title">🚫 deny</div>
+          <p style="font-size:12px;color:#ff9999;margin-bottom:8px">절대 실행 금지 — 묻지도 않고 차단</p>
+          <div class="perm-item">Bash(rm -rf:*)</div>
+          <div class="perm-item">Bash(git push --f:*)</div>
+          <div class="perm-item">Bash(drop table:*)</div>
+          <div class="perm-item">Bash(curl * | sh)</div>
+        </div>
+        <div class="perm-card ask">
+          <div class="perm-card-title">❓ ask</div>
+          <p style="font-size:12px;color:var(--warn);margin-bottom:8px">실행 전 사용자 확인 — 기본값</p>
+          <div class="perm-item">Bash(git push:*)</div>
+          <div class="perm-item">Bash(npm publish:*)</div>
+          <div class="perm-item">Write(*)</div>
+          <div class="perm-item">Edit(*)</div>
+        </div>
+        <div class="perm-card allow">
+          <div class="perm-card-title">✅ allow</div>
+          <p style="font-size:12px;color:var(--accent2);margin-bottom:8px">자동 허용 — 안전하다고 확인된 것만</p>
+          <div class="perm-item">Read(*)</div>
+          <div class="perm-item">Bash(npm test:*)</div>
+          <div class="perm-item">Bash(git status:*)</div>
+          <div class="perm-item">Bash(git diff:*)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 11 : IAM — 권한 관리의 중요성 ─────────────── -->
+  <div class="slide" id="s11">
+    <div class="slide-inner">
+      <div class="section-label">IAM · 권한 관리</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">미설정 시</span> 클로드는 <span class="accent2">모든 권한</span>을 갖는다</h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span>기본 상태의 클로드 코드는 <strong>파일·셸·네트워크 모두 접근 가능</strong></span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>연결된 DB MCP가 있다면? — <strong>테이블 전체 DROP</strong> 가능</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>중요 저장소·서비스 접근은 <code>deny</code>로 사전에 차단</span>
+        </li>
+      </ul>
+      <div class="footnote footnote-danger" style="margin-top:20px">
+        <strong>실제 사례</strong> — 스터디 중 제기된 시나리오: MCP DB 연동 + 권한 미설정 → 클로드가 불필요한 정리 작업 수행 중 테이블 전체 삭제. <strong>permissions 설계는 선택이 아닌 필수.</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 12 : co-authored-by & git 전용 에이전트 ─────────────── -->
+  <div class="slide" id="s12">
+    <div class="slide-inner">
+      <div class="section-label">커밋 추적성</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">Co-Authored-By</span> & git 검증 에이전트</h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span>클로드가 생성한 커밋에 <strong>Co-Authored-By: Claude</strong> 태그 자동 삽입</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>git 전용 서브에이전트를 두어 <strong>커밋 전 검증(lint · test · diff 확인)</strong></span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>AI 작성 코드와 사람 작성 코드를 <strong>명확히 추적</strong> 가능</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>원하지 않는다면 <code>includeCoAuthoredBy: false</code>로 비활성화</span>
+        </li>
+      </ul>
+      <div style="margin-top:20px;background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-family:var(--font-mono);font-size:12px;color:var(--text-sub);line-height:1.8">
+        <span style="color:var(--muted)"># git commit message 예시</span><br>
+        feat: add auth module<br><br>
+        Co-authored-by: Claude &lt;noreply@anthropic.com&gt;
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 13 : settings.json 스코프 계층 ─────────────── -->
+  <div class="slide" id="s13">
+    <div class="slide-inner">
+      <div class="section-label">설정 스코프</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)">글로벌 &lt; 프로젝트 &lt; <span class="accent">로컬</span></h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">뒤에 읽히는 파일이 앞의 설정을 덮어씀</p>
+      <div class="hierarchy">
+        <div class="hier-row">
+          <div class="hier-num">1</div>
+          <div class="hier-content">
+            <div class="hier-title"><code>~/.claude/settings.json</code> — 글로벌</div>
+            <div class="hier-desc">모든 프로젝트에 적용. 절대 금지 명령·불변 규칙 위치.</div>
+          </div>
+          <div class="hier-badge green">먼저 읽힘</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">2</div>
+          <div class="hier-content">
+            <div class="hier-title"><code>.claude/settings.json</code> — 프로젝트</div>
+            <div class="hier-desc">팀원과 공유·발전. 글로벌 위에 덮어씀. git에 커밋.</div>
+          </div>
+          <div class="hier-badge" style="color:var(--accent);background:rgba(88,166,255,0.1);border-color:rgba(88,166,255,0.25)">팀 공유</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">3</div>
+          <div class="hier-content">
+            <div class="hier-title"><code>.claude/settings.local.json</code> — 로컬</div>
+            <div class="hier-desc">gitignore 대상. 개인 실험·임시 허용. 최종 우선.</div>
+          </div>
+          <div class="hier-badge">최종 우선</div>
+        </div>
+      </div>
+      <ul class="bullets" style="margin-top:18px">
+        <li>
+          <span class="bi"></span>
+          <span>프로젝트 settings.json을 팀원이 함께 관리 → <strong>공동 품질 게이트</strong></span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 14 : claude -p 비대화형 ─────────────── -->
+  <div class="slide" id="s14">
+    <div class="slide-inner">
+      <div class="section-label">비대화형 실행</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><code style="font-size:0.7em">claude -p</code> — <span class="accent">자동화 파이프라인</span></h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span><code>claude -p "..."</code> — 단일 프롬프트를 <strong>비대화형으로 실행</strong>, CI/CD에 적합</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>권한에 막히면 <strong>응답 없이 무한 대기</strong> — 자동화 환경에선 반드시 allow 설정 필요</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span><code>--dangerously-skip-permissions</code> — 모든 권한 확인 스킵</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>SDK(<code>@anthropic-ai/claude-code</code>)로 프로그래밍 방식 호출도 가능</span>
+        </li>
+      </ul>
+      <div class="footnote footnote-danger" style="margin-top:20px">
+        <strong>⚠ 주의</strong> — <code>--dangerously-skip-permissions</code>는 이름 그대로 위험. <strong>신뢰된·격리된 환경(컨테이너, 전용 VM 등)에서만</strong> 사용할 것.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 15 : 모델 선택 비교 ─────────────── -->
+  <div class="slide" id="s15">
+    <div class="slide-inner">
+      <div class="section-label">모델 선택</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)">opus / sonnet / haiku — <span class="accent">용도별 선택</span></h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">에이전트 정의 파일(<code>SKILL.md</code>·<code>agents/*.md</code>)의 frontmatter <code>model</code> 필드에서 지정</p>
+
+      <!-- 막대 차트 -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px">
+        <!-- opus -->
+        <div class="model-bar-row">
+          <div class="model-bar-label" style="color:#e8c97a">claude-<br>opus</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">능력</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:95%;background:linear-gradient(90deg,#e8c97a,#f0c040)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">비용</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:90%;background:linear-gradient(90deg,#f85149,#ff6b6b)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">속도</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:40%;background:linear-gradient(90deg,#8b949e,#b1bac4)"></div></div>
+            </div>
+          </div>
+          <div class="model-bar-meta">복잡한 설계·판단<br>판단 전문 에이전트</div>
+        </div>
+        <!-- sonnet -->
+        <div class="model-bar-row">
+          <div class="model-bar-label" style="color:var(--accent)">claude-<br>sonnet</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">능력</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:75%;background:linear-gradient(90deg,var(--accent),#79c0ff)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">비용</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:50%;background:linear-gradient(90deg,#f0883e,#f9a857)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">속도</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:72%;background:linear-gradient(90deg,var(--accent),#79c0ff)"></div></div>
+            </div>
+          </div>
+          <div class="model-bar-meta">탐색·구현 메인<br>실행 전문 에이전트</div>
+        </div>
+        <!-- haiku -->
+        <div class="model-bar-row" style="margin-bottom:0">
+          <div class="model-bar-label" style="color:var(--accent2)">claude-<br>haiku</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">능력</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:50%;background:linear-gradient(90deg,var(--accent2),#56d364)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">비용</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:18%;background:linear-gradient(90deg,var(--accent2),#56d364)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);width:48px">속도</span>
+              <div class="model-bar-track"><div class="model-bar-fill" style="width:95%;background:linear-gradient(90deg,var(--accent2),#56d364)"></div></div>
+            </div>
+          </div>
+          <div class="model-bar-meta">단순 구현·탐색<br>경량 탐색 에이전트</div>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:0">
+        <strong>지정 방법</strong> — <code>SKILL.md</code> 또는 <code>.claude/agents/agent-name.md</code> frontmatter에 <code>model: claude-opus-4-5</code> 형식으로 선언.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 16 : 에이전트별 도구 제한 ─────────────── -->
+  <div class="slide" id="s16">
+    <div class="slide-inner">
+      <div class="section-label">에이전트 도구 제한</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">필요한 도구만</span> — 최소 권한 원칙</h2>
+      <p class="slide-subtitle">에이전트 역할에 맞는 도구만 허용 → 불필요 작업 원천 차단</p>
+      <div class="cols" style="margin-top:18px">
+        <div class="col-card">
+          <h3 style="color:var(--muted)">Explorer 에이전트</h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi" style="background:var(--accent2)"></span><span><code class="chip chip-green">Read</code> — 허용</span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span><code class="chip chip-green">Glob</code> — 허용</span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span><code class="chip chip-green">Grep</code> — 허용</span></li>
+            <li><span class="bi" style="background:var(--danger)"></span><span style="color:var(--danger)"><code class="chip chip-danger">Write</code> — 불필요 → 차단</span></li>
+            <li><span class="bi" style="background:var(--danger)"></span><span style="color:var(--danger)"><code class="chip chip-danger">Bash</code> — 불필요 → 차단</span></li>
+          </ul>
+        </div>
+        <div class="col-card">
+          <h3 style="color:var(--muted)">Developer 에이전트</h3>
+          <ul class="bullets sub" style="margin-top:8px">
+            <li><span class="bi" style="background:var(--accent2)"></span><span><code class="chip chip-green">Read·Write·Edit</code></span></li>
+            <li><span class="bi" style="background:var(--accent2)"></span><span><code class="chip chip-green">Bash(npm test:*)</code></span></li>
+            <li><span class="bi" style="background:var(--danger)"></span><span style="color:var(--danger)"><code class="chip chip-danger">Bash(rm -rf:*)</code> 차단</span></li>
+            <li><span class="bi" style="background:var(--danger)"></span><span style="color:var(--danger)"><code class="chip chip-danger">Bash(git push --f:*)</code> 차단</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        에이전트 정의 파일 frontmatter의 <code>allowed-tools</code> / <code>disallowed-tools</code> 필드로 선언.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 17 : hooks ─────────────── -->
+  <div class="slide" id="s17">
+    <div class="slide-inner">
+      <div class="section-label">hooks</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.6vw,36px)"><span class="accent">훅</span>으로 검증 자동화</h2>
+      <p class="slide-subtitle">특정 이벤트에 스크립트를 연결 — 사람 없이도 품질 게이트 실행</p>
+      <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead>
+            <tr>
+              <th>훅 이벤트</th>
+              <th>실행 시점</th>
+              <th>활용 예시</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PreToolUse</td>
+              <td>도구 실행 직전</td>
+              <td>위험 명령 로깅, 추가 확인</td>
+            </tr>
+            <tr>
+              <td>PostToolUse</td>
+              <td>도구 실행 직후</td>
+              <td>파일 저장 후 lint 자동 실행</td>
+            </tr>
+            <tr>
+              <td>Stop</td>
+              <td>클로드가 작업 완료 후 멈출 때</td>
+              <td>완료 알림, 결과 요약 저장</td>
+            </tr>
+            <tr>
+              <td>Notification</td>
+              <td>클로드가 알림 전송 시</td>
+              <td>슬랙·이메일 연동</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="bullets" style="margin-top:16px">
+        <li>
+          <span class="bi"></span>
+          <span>훅 + permissions = <strong>이중 안전망</strong> — 허용 전 확인 + 실행 후 검증</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 18 : 마무리 ─────────────── -->
+  <div class="slide" id="s18">
+    <div class="slide-inner" style="text-align:center">
+      <div class="slide-tag" style="text-align:center">마무리 · Chapter 02</div>
+      <div class="big-quote" style="margin-bottom:28px">
+        <span class="hl2">"검증을 견고하게"</span><br>
+        <span class="hl" style="font-size:0.7em">권한·훅·TDD·worktree atomic</span>
+      </div>
+      <div class="cols" style="text-align:left;margin-top:0">
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">2장 핵심 요약</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--text)">워크플로</strong> — 탐색→계획→구현→커밋</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">TDD</strong> — AI에게 검증 케이스 전달</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--accent)">worktree</strong> ★ 병렬 에이전트 격리</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">permissions</strong> — deny/ask/allow 선언</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">hooks</strong> — 이벤트 기반 자동 검증</span></li>
+          </ul>
+        </div>
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">기억할 원칙</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>미설정 = 전권 → IAM 필수 설계</span></li>
+            <li><span class="bi"></span><span>글로벌 &lt; 프로젝트 &lt; 로컬 (뒤가 우선)</span></li>
+            <li><span class="bi"></span><span>worktree atomic 단위 → merge 충돌 최소화</span></li>
+            <li><span class="bi"></span><span>opus 판단 / sonnet 실행 / haiku 탐색</span></li>
+            <li><span class="bi"></span><span>--dangerously-skip-permissions = 격리 환경만</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#deck -->
+
+<script>
+(function() {
+  'use strict';
+
+  var slides = document.querySelectorAll('.slide');
+  var total  = slides.length;
+  var cur    = 0;
+
+  var counter     = document.getElementById('counter');
+  var progressBar = document.getElementById('progress-bar');
+
+  function show(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= total) idx = total - 1;
+
+    slides[cur].classList.remove('active');
+    cur = idx;
+    slides[cur].classList.add('active');
+
+    counter.textContent = (cur + 1) + ' / ' + total;
+
+    var pct = total <= 1 ? 100 : (cur / (total - 1)) * 100;
+    progressBar.style.width = pct + '%';
+  }
+
+  function navigate(dir) {
+    show(cur + dir);
+  }
+
+  /* 키보드 */
+  document.addEventListener('keydown', function(e) {
+    switch (e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown':
+        e.preventDefault(); navigate(1); break;
+      case 'ArrowLeft': case 'PageUp':
+        e.preventDefault(); navigate(-1); break;
+      case 'Home':
+        e.preventDefault(); show(0); break;
+      case 'End':
+        e.preventDefault(); show(total - 1); break;
+    }
+  });
+
+  /* 클릭 내비: click-prev/click-next 은 HTML onclick 처리 */
+  window.navigate = navigate;
+
+  /* 터치 스와이프 */
+  var touchStartX = 0;
+  var touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].screenX - touchStartX;
+    var dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      navigate(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  /* 초기화 */
+  show(0);
+})();
+</script>
+</body>
+</html>
