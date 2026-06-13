@@ -1,6 +1,6 @@
 ---
 name: chapter-deck
-description: 챕터 정리 메모를 받아 개인 정리본 README와 비교 시각화(애니메이션)가 들어간 자기완결 HTML 슬라이드덱을 두 개의 병렬 서브에이전트로 동시에 생성한다. README 작성과 HTML 작성을 분리·병렬화하고, 비교가 필요한 부분(예: git worktree 미사용 vs 사용)은 표(markdown)와 CSS 애니메이션(html)으로 직관화한다. 마지막에 챕터 제목·진행 현황 갱신을 사용자에게 묻고 정리본만 커밋·푸시한다. 인자로 챕터 번호와 이름을 받는다.
+description: "챕터 정리 메모를 받아 개인 정리본 README와 비교 시각화(애니메이션)가 들어간 자기완결 HTML 슬라이드덱을 두 개의 병렬 서브에이전트로 동시에 생성한다. README 작성과 HTML 작성을 분리·병렬화하고, 비교가 필요한 부분(예 git worktree 미사용 vs 사용)은 표(markdown)와 CSS 애니메이션(html)으로 직관화한다. 마지막에 챕터 제목·진행 현황 갱신을 사용자에게 묻고 정리본만 커밋·푸시한다. 인자로 챕터 번호와 이름을 받는다."
 argument-hint: <챕터번호> [이름]
 disable-model-invocation: true
 ---
