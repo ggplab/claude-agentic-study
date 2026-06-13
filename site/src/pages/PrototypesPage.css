@@ -1,0 +1,145 @@
+/* PrototypesPage — 프로토타입 갤러리 */
+
+.prototypes-page {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.prototypes-page__heading {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--fg);
+  margin: 0 0 0.1rem;
+}
+
+.prototypes-page__sub {
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.prototypes-page__empty {
+  font-size: 1rem;
+  color: var(--fg-muted);
+  margin: 0;
+  padding: 3rem 0;
+  text-align: center;
+}
+
+/* ── 챕터 그룹 ── */
+.prototypes-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.prototypes-chapter__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.prototypes-chapter__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0;
+}
+
+.prototypes-chapter__link {
+  font-size: 0.85rem;
+  color: var(--link);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.prototypes-chapter__link:hover {
+  text-decoration: underline;
+}
+
+/* 카드 그리드 */
+.prototypes-chapter__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── 개별 프로토타입 카드 ── */
+.proto-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.proto-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.proto-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proto-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.proto-card__open {
+  font-size: 0.78rem;
+  color: var(--link);
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.proto-card__open:hover {
+  background: var(--accent-soft);
+}
+
+/* PrototypeFrame 이 proto-card 내부일 때 테두리 중복 제거 */
+.proto-card > .prototype-frame {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+  .prototypes-page {
+    padding: 1.5rem 1rem 3rem;
+    gap: 2rem;
+  }
+
+  .prototypes-chapter__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,28 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-badge.is-done {
+  color: var(--done);
+  background: var(--done-bg);
+}
+.status-badge.is-progress {
+  color: var(--progress);
+  background: var(--progress-bg);
+}
+.status-badge.is-planned {
+  color: var(--planned);
+  background: var(--planned-bg);
+}

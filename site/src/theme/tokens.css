@@ -1,0 +1,58 @@
+/* 디자인 토큰 — 라이트/다크 토글. data-theme 속성을 <html>에 ThemeProvider가 설정한다. */
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo",
+    "Pretendard", "Noto Sans KR", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  --maxw: 1080px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* status accent (테마 공통) */
+  --done: #16a34a;
+  --done-bg: rgba(22, 163, 74, 0.12);
+  --progress: #d97706;
+  --progress-bg: rgba(217, 119, 6, 0.14);
+  --planned: #64748b;
+  --planned-bg: rgba(100, 116, 139, 0.14);
+}
+
+/* ---------- Light (default) ---------- */
+:root,
+:root[data-theme="light"] {
+  --bg: #f7f8fa;
+  --bg-elev: #ffffff;
+  --bg-subtle: #eef1f5;
+  --fg: #14181f;
+  --fg-muted: #5b6573;
+  --border: #e2e6ec;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --link: #4338ca;
+  --code-bg: #f1f3f7;
+  color-scheme: light;
+}
+
+/* ---------- Dark ---------- */
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-elev: #161b22;
+  --bg-subtle: #1c2330;
+  --fg: #e6edf3;
+  --fg-muted: #9aa7b4;
+  --border: #2a313c;
+  --accent: #7c8cff;
+  --accent-fg: #0d1117;
+  --accent-soft: rgba(124, 140, 255, 0.16);
+  --link: #93a4ff;
+  --code-bg: #1b212b;
+  color-scheme: dark;
+}

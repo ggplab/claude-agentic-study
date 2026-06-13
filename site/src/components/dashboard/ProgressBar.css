@@ -1,0 +1,76 @@
+.progress-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.progress-bar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.progress-bar-track {
+  position: relative;
+  height: 10px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 0.4s ease;
+}
+
+.progress-bar-fill.is-done {
+  background: var(--done);
+}
+
+.progress-bar-fill.is-progress {
+  background: var(--progress);
+}
+
+.progress-bar-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
+
+.progress-bar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.progress-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.progress-legend-dot.is-done {
+  background: var(--done);
+}
+
+.progress-legend-dot.is-progress {
+  background: var(--progress);
+}
+
+.progress-legend-dot.is-planned {
+  background: var(--planned);
+}

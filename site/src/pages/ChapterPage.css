@@ -1,0 +1,210 @@
+/* ChapterPage — 챕터 상세 페이지 */
+
+.chapter-page {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* 챕터 없음 */
+.chapter-not-found {
+  padding: 4rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chapter-not-found__msg {
+  font-size: 1.1rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.chapter-not-found__back {
+  font-size: 0.9rem;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.chapter-not-found__back:hover {
+  text-decoration: underline;
+}
+
+/* ── 헤더 ── */
+.chapter-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chapter-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.chapter-header__back {
+  font-size: 0.85rem;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.chapter-header__back:hover {
+  text-decoration: underline;
+}
+
+.chapter-header__title {
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.chapter-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.chapter-header__repo,
+.chapter-header__record {
+  font-size: 0.8rem;
+  color: var(--link);
+  text-decoration: none;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.chapter-header__repo:hover,
+.chapter-header__record:hover {
+  background: var(--accent-soft);
+}
+
+.chapter-header__summary {
+  font-size: 1rem;
+  color: var(--fg-muted);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 72ch;
+  padding: 0.75rem 1rem;
+  background: var(--bg-subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* 슬라이드 바로가기 */
+.chapter-header__slide-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chapter-header__slide-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chapter-header__slide-link {
+  font-size: 0.85rem;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.chapter-header__slide-link:hover {
+  text-decoration: underline;
+}
+
+/* ── 준비 중 카드 ── */
+.chapter-pending {
+  padding: 2rem;
+  text-align: center;
+}
+
+.chapter-pending__msg {
+  font-size: 1rem;
+  color: var(--fg-muted);
+  margin: 0 0 0.75rem;
+}
+
+.chapter-pending__sub {
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ── 섹션 공통 ── */
+.chapter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chapter-section__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+/* 공용 README 카드 */
+.chapter-readme {
+  padding: 1.5rem 2rem;
+  overflow-x: auto;
+}
+
+/* 핵심 개념 그리드 */
+.chapter-concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* 프로토타입 목록 */
+.chapter-prototype-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 내용 없음 */
+.chapter-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--fg-muted);
+}
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+  .chapter-page {
+    padding: 1.5rem 1rem 3rem;
+    gap: 2rem;
+  }
+
+  .chapter-readme {
+    padding: 1rem;
+  }
+
+  .chapter-concept-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,64 @@
+/* ConceptCard — 핵심 개념 카드 */
+
+.concept-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* 상단 헤더: 작성자 + 개념명 */
+.concept-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.concept-card__concept {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 리마인드 / 의미 섹션 */
+.concept-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.concept-card__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+}
+
+.concept-card__text {
+  font-size: 0.9rem;
+  color: var(--fg);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* LinkedIn 링크 */
+.concept-card__linkedin {
+  display: inline-flex;
+  align-items: center;
+  margin-top: auto;
+  font-size: 0.8rem;
+  color: var(--link);
+  text-decoration: none;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+  transition: background 0.15s;
+}
+
+.concept-card__linkedin:hover {
+  background: var(--accent-soft);
+}

@@ -17,3 +17,15 @@
 - 스테이징은 명시 경로만 — `git add -A` 금지(`_drafts/` 혼입 방지).
 - 다른 참여자의 README 섹션은 수정·삭제 금지(본인 섹션만 채움).
 - 응답은 한국어.
+
+## Pages 사이트 (대시보드)
+
+스터디 아카이브를 한눈에 보는 React 대시보드. 소스는 저장소 markdown(README들)이며 **작성자가 README를 작성·push 하면 GitHub Actions가 자동 재빌드·배포**한다.
+
+- 위치: `/site` (Vite + React + TypeScript). 배포: GitHub Actions → Pages (`https://ggplab.github.io/claude-agentic-study/`).
+- 데이터 원천: 루트 `README.md`(진행 현황 표·책 정보), `members.md`, `chapters/chNN/README.md`(공용), `chapters/chNN/<이름>/README.md`(개인 정리본), 챕터 하위 `*.html`(프로토타입).
+- 갱신: `chapters/**`·`README.md`·`members.md`·`site/**` 변경을 main에 push → `.github/workflows/pages.yml`가 `site`를 빌드(`npm run build`, prebuild가 `scripts/build-content.mjs`로 `content.json` 재생성)하여 Pages 배포.
+- 보여주는 것: ① 챕터별 내용 ② HTML 프로토타입 인앱 뷰(iframe) ③ 파일별 작성자 ④ 진행 현황 대시보드.
+- 로컬 개발: `cd site && npm install && npm run dev`(자동으로 content 생성). 빌드 검증: `cd site && npm run build`.
+- 최초 1회: 저장소 Settings → Pages → Source = "GitHub Actions".
+- 생성물(`site/src/generated/`, `site/public/prototypes/`, `site/dist/`)은 **커밋하지 않는다** — markdown/html이 원천이며 빌드 때 재생성된다.
