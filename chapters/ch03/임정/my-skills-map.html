@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 스킬 분류 지도 + 대표 프론트매터</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --g50:#ffffff; --g200:#f6f5f4; --g400:#a39e98; --g600:#615d59; --g900:#31302e;
+    --accent:#2563EB; --accent-light:#60A5FA; --accent-dark:#1D4ED8;
+    --border:#dddddd;
+    --font:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--g900);background:var(--g200);
+    line-height:1.5;padding:40px 20px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto}
+  header{margin-bottom:26px}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--accent);
+    text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--accent)}
+  .sub{font-size:14.5px;color:var(--g600);margin-top:9px;max-width:720px}
+  .count{display:inline-flex;gap:14px;margin-top:14px;font-size:12.5px}
+  .count b{font-size:19px;color:var(--accent-dark);font-weight:700;margin-right:5px}
+  .count span{background:var(--g50);border:1px solid var(--border);border-radius:8px;padding:7px 13px}
+
+  .sec-label{font-size:12px;font-weight:700;color:var(--g400);letter-spacing:.05em;
+    text-transform:uppercase;margin:26px 0 13px}
+
+  /* category grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:13px}
+  .cat{background:var(--g50);border:1px solid var(--border);border-radius:11px;padding:15px 16px}
+  .cat.proj{border-color:var(--accent-light);background:linear-gradient(180deg,#f3f7ff,#fff)}
+  .cat h3{font-size:13.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .cat h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+  .cat.proj h3 .dot{background:var(--accent-dark)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:11.5px;color:var(--g600);background:var(--g200);border:1px solid var(--border);
+    border-radius:6px;padding:3px 7px;font-family:var(--mono)}
+  .chip.flag{border-color:var(--accent);color:var(--accent-dark);font-weight:600}
+
+  /* frontmatter examples */
+  .fm{background:var(--g50);border:1px solid var(--border);border-radius:11px;padding:16px 18px;margin-bottom:12px}
+  .fm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .fm-head .name{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent-dark)}
+  .fm-head .role{font-size:12.5px;color:var(--g600)}
+  pre{background:#fbfaf9;border:1px solid var(--border);border-radius:8px;padding:12px 14px;
+    overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--g900)}
+  pre .k{color:var(--accent-dark);font-weight:600}
+  pre .v{color:var(--g600)}
+  pre .hl{background:#eef3ff;border-radius:3px;padding:0 2px}
+  pre .c{color:var(--g400)}
+
+  .legend{background:linear-gradient(180deg,#eef3ff,#fff);border:1px solid var(--accent-light);
+    border-radius:11px;padding:16px 18px;margin-top:6px}
+  .legend table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .legend td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--g600)}
+  .legend td:first-child{font-family:var(--mono);color:var(--accent-dark);font-weight:600;white-space:nowrap;width:34%}
+  .legend tr:last-child td{border-bottom:none}
+
+  footer{font-size:12px;color:var(--g400);margin-top:18px;padding:0 4px;line-height:1.6}
+  footer b{color:var(--g600)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">3장 · 에이전트 스킬 · 내 시스템 실측</div>
+    <h1>내 스킬 <em>분류 지도</em> + 대표 프론트매터</h1>
+    <p class="sub">47개를 다 나열하지 않는다. 도메인으로 묶고, 프론트매터 필드를 어떻게 쓰는지 대표 6개로 본다.</p>
+    <div class="count">
+      <span><b>44</b>개인 <code>~/.claude/skills</code></span>
+      <span><b>3</b>프로젝트 <code>.claude/skills</code></span>
+      <span><b>10</b>도메인</span>
+    </div>
+  </header>
+
+  <div class="sec-label">① 분류 — 도메인 기준</div>
+  <div class="grid">
+    <div class="cat"><h3><span class="dot"></span>문서·산출물</h3><div class="chips">
+      <span class="chip">docx</span><span class="chip">pptx</span><span class="chip">pptx-finalize</span><span class="chip">xlsx</span><span class="chip">pdf</span><span class="chip">pdf-rag</span><span class="chip">markdown-to-pdf</span><span class="chip">lecture-slides</span><span class="chip">meeting-agenda-docx</span><span class="chip">document-generate</span><span class="chip">brand-guidelines</span><span class="chip">theme-factory</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>글쓰기·콘텐츠</h3><div class="chips">
+      <span class="chip">technical-writer</span><span class="chip">doc-coauthoring</span><span class="chip">content-blueprint</span><span class="chip">research</span><span class="chip">flow-map</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>커뮤니케이션·연동</h3><div class="chips">
+      <span class="chip">email-draft</span><span class="chip">gmail-search</span><span class="chip">publish-gdocs</span><span class="chip flag">discord-channel</span><span class="chip">kanban</span><span class="chip">review-inquiry</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>워크플로·세션 (핵심 루프)</h3><div class="chips">
+      <span class="chip">commit</span><span class="chip">session-wrap</span><span class="chip">plan</span><span class="chip">daily-retro</span><span class="chip">healthcheck</span><span class="chip">grill-with-docs</span><span class="chip">delegate</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>지식관리</h3><div class="chips">
+      <span class="chip">wiki-ingest</span><span class="chip">wiki-query</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>n8n 도메인</h3><div class="chips">
+      <span class="chip">n8n-route</span><span class="chip">n8n-mcp-tools-expert</span><span class="chip">n8n-validation-expert</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>교육 (edu-*)</h3><div class="chips">
+      <span class="chip">backwards-design</span><span class="chip">competency-unpacker</span><span class="chip">retrieval-practice</span><span class="chip">rubric-generator</span><span class="chip">socratic-questioning</span><span class="chip">spaced-practice</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>메타·인프라 (스킬 자체)</h3><div class="chips">
+      <span class="chip">skill-creator</span><span class="chip">find-skills</span><span class="chip">new-project</span><span class="chip">infra-inventory</span>
+    </div></div>
+    <div class="cat"><h3><span class="dot"></span>사업·검수</h3><div class="chips">
+      <span class="chip flag">yc-office-hours</span><span class="chip">review-video</span>
+    </div></div>
+    <div class="cat proj"><h3><span class="dot"></span>프로젝트 전용 (이 레포)</h3><div class="chips">
+      <span class="chip flag">order-session</span><span class="chip flag">study-chapter</span><span class="chip flag">chapter-deck</span>
+    </div></div>
+  </div>
+
+  <div class="sec-label">② 대표 프론트매터 — 최소형에서 안전·권한·모델까지</div>
+
+  <div class="fm">
+    <div class="fm-head"><span class="name">commit</span><span class="role">최소 형태 — 인자 없음, 자동호출만</span></div>
+<pre><span class="k">name</span>: commit
+<span class="k">description</span>: <span class="v">Stage and commit … Use when the user asks to commit.</span></pre>
+  </div>
+
+  <div class="fm">
+    <div class="fm-head"><span class="name">order-session</span><span class="role">레포에 묶인 인자형 (프로젝트 스킬)</span></div>
+<pre><span class="k">name</span>: order-session
+<span class="k">description</span>: <span class="v">단원 리더가 발표 순서를 조정한다 …</span>
+<span class="k hl">argument-hint</span>: <span class="v">&lt;챕터번호 (예 3)&gt;</span></pre>
+  </div>
+
+  <div class="fm">
+    <div class="fm-head"><span class="name">study-chapter</span><span class="role">안전장치 — 커밋·푸시하므로 자동호출 차단</span></div>
+<pre><span class="k">name</span>: study-chapter
+<span class="k">description</span>: <span class="v">… 정리본만 커밋·푸시 …</span>
+<span class="k">argument-hint</span>: <span class="v">&lt;챕터번호&gt; [이름]</span>
+<span class="k hl">disable-model-invocation</span>: <span class="v">true</span>   <span class="c"># /로만 호출</span></pre>
+  </div>
+
+  <div class="fm">
+    <div class="fm-head"><span class="name">review-inquiry</span><span class="role">권한을 스킬 단위로 좁힘 (Notion 도구만)</span></div>
+<pre><span class="k">name</span>: review-inquiry
+<span class="k">description</span>: <span class="v">강의/컨설팅 문의 접수 → 판정 → Notion 기록</span>
+<span class="k hl">allowed-tools</span>: <span class="v">Read Write Bash
+  mcp__…Notion__notion-search
+  mcp__…Notion__notion-create-pages</span></pre>
+  </div>
+
+  <div class="fm">
+    <div class="fm-head"><span class="name">yc-office-hours</span><span class="role">판단 무거운 스킬은 모델 격상</span></div>
+<pre><span class="k">name</span>: yc-office-hours
+<span class="k">description</span>: <span class="v">사업 결정을 강제 질문으로 검증 …</span>
+<span class="k">argument-hint</span>: <span class="v">[검토할 아이디어나 결정]</span>
+<span class="k hl">model</span>: <span class="v">opus</span></pre>
+  </div>
+
+  <div class="legend">
+    <table>
+      <tr><td>argument-hint</td><td>인자를 받는 스킬 — <code>/</code> 입력 시 자동완성 힌트로 뜬다</td></tr>
+      <tr><td>disable-model-invocation</td><td><b>비가역 사이드이펙트의 안전장치.</b> 내 시스템에선 전송·생성·커밋하는 스킬(discord-channel · meeting-minutes · study-chapter · chapter-deck)에만 붙어 있다 — 책 표 3-1이 빠뜨린 필드</td></tr>
+      <tr><td>allowed-tools</td><td>도구 사전승인 → 권한 프롬프트 절약. 특정 도구만 적으면 그 스킬의 권한 범위를 좁히는 효과</td></tr>
+      <tr><td>model</td><td>그 스킬이 도는 동안 모델 격상/격하 (이번 턴 한정)</td></tr>
+    </table>
+  </div>
+
+  <footer>
+    <b>정직 표기.</b> “대표”는 <b>워크플로에서의 역할</b> 기준으로 골랐다(측정된 호출 횟수가 아님). 실호출 집계는 <code>infra-inventory</code> 스킬이 트랜스크립트로 따로 낸다. 프론트매터는 실제 SKILL.md에서 발췌·요약. · ggplab brand-and-light (warm-paper) 토큰 적용.
+  </footer>
+</div>
+</body>
+</html>
