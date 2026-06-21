@@ -126,6 +126,15 @@ urdf-to-mjcf/
 - 모든 성공 케이스는 MuJoCo에 **실제 로드 + 200스텝 시뮬레이션**까지 확인했다.
 - 남은 9개는 변환 범위 밖: 메시 파일 실제 누락 7 · URDF 구조 오류 1(`meta_y`) · dae 누락 1(`bimanual`).
 - 두 스킬은 `isaacgym_allegro_hand/.claude/skills/{urdf-to-mjcf, mesh-to-obj}`에 커밋, 변환 결과(obj·`.obj.urdf`·단순화 STL)도 레포에 영구화했다.
+- 못 한 9개의 사유는 레포에 기록(`robots/hands/MJCF_CONVERSION.md`): 메시 파일 실제 누락 7 · `package://` 미해결 1 · URDF 구조 오류 1.
+
+### 변환한 MJCF를 MuJoCo로 띄운 화면
+
+대표적으로 변환한 손을 MuJoCo 렌더러로 띄워 확인한 스크린샷이다(변환 → 로드 → 렌더가 실제로 된다는 증거).
+
+| Allegro Hand (대표, bodies=17) | Shadow Hand (메시 풍부, bodies=25) |
+|---|---|
+| ![allegro hand mjcf](mjcf_allegro_hand.png) | ![shadow hand mjcf](mjcf_shadow_hand.png) |
 
 ### 스킬로 만들어 진행해서 얻은 이점 (이번 장 핵심 회고)
 
