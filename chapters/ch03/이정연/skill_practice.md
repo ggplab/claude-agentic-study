@@ -111,21 +111,29 @@ urdf-to-mjcf/
 
 ---
 
-## 13. 구현 결과 (실제 적용 완료 · 2026-06-21)
+## 13. 구현 결과 — 손 URDF 68개 변환율 87% (2026-06-21)
 
-계획을 내 로보틱스 프로젝트 `isaacgym_allegro_hand`에 실제 스킬로 만들어 검증했다.
+계획을 내 로보틱스 프로젝트 `isaacgym_allegro_hand`(`robots/hands/`의 URDF **68개**)에 적용했다. 한 번에 끝낸 게 아니라 **스킬을 단위로 점진적으로 쌓아** 변환율을 끌어올린 게 핵심이다.
 
-- **위치**: `isaacgym_allegro_hand/.claude/skills/urdf-to-mjcf/` (프로젝트 스킬)
-- **구성**: `SKILL.md` + `reference.md` + `EXAMPLES.md` + `scripts/{lint_urdf.py, convert.py, requirements.txt}`
-- **대상**: `robots/hands/` 의 URDF **68개**.
+### 성공률 추이
 
-**검증된 결과**
-- `lint_urdf.py`(stdlib만, mujoco 불필요): 68개 스캔 → **382 blocking** 검출(`.glb`/`.dae` 메시 error, mimic·0관성·`no-mujoco-tag` warn).
-- `convert.py`(mujoco 3.3.5, MjSpec): **36 변환 / 32 실패**. 실패는 전부 실제 원인 — `_glb`/dae 메시 미지원, ASCII STL(v6), 누락 메시(plexus_meta), URDF 구조 오류(meta_y).
+| 단계 | 한 일 | 성공 | 비율 |
+|------|-------|------|------|
+| 1차 | `urdf-to-mjcf` 스킬로 일괄 변환 | 36/68 | 53% |
+| 2차 | `mesh-to-obj` 스킬 추가 → glb 손 19개 obj 변환·재시도 | 55/68 | 81% |
+| 3차 | 과대 메시 단순화(face>200000인 base_link 3개 decimation) | **59/68** | **87%** |
 
-**디버깅으로 찾은 핵심**
-- MuJoCo URDF 파서가 메시 경로를 basename으로 strip(`./meshes/STL_s/Palm.STL`→`Palm.STL`)해 처음엔 67/68이 실패.
-- `convert.py`가 변환 직전 URDF에 `<mujoco><compiler strippath="false" balanceinertia="true">` 블록을 **임시 주입**(원본 불변)해 해결 → 36개 정상 변환. 린터의 `no-mujoco-tag` 경고와 정확히 연결되는 처방.
+- 모든 성공 케이스는 MuJoCo에 **실제 로드 + 200스텝 시뮬레이션**까지 확인했다.
+- 남은 9개는 변환 범위 밖: 메시 파일 실제 누락 7 · URDF 구조 오류 1(`meta_y`) · dae 누락 1(`bimanual`).
+- 두 스킬은 `isaacgym_allegro_hand/.claude/skills/{urdf-to-mjcf, mesh-to-obj}`에 커밋, 변환 결과(obj·`.obj.urdf`·단순화 STL)도 레포에 영구화했다.
 
-**계획 대비 변경**
-- `context: fork` 분리 감사(`mjcf-audit`)는 이번 범위에서 보류 — convert가 컴파일 시점에 모델을 검증하므로 별도 감사 스킬 없이도 실패가 드러났다. 다음 단계(메시 포맷 일괄 변환 자동화)에서 재검토.
+### 스킬로 만들어 진행해서 얻은 이점 (이번 장 핵심 회고)
+
+1. **한 손이 아니라 68개에 일관 적용** — 절차를 스킬(스크립트)로 박제하니 "한 번 만들면 전부에 동일하게" 돌아간다. 손마다 손으로 했으면 불가능했을 규모.
+2. **스킬 조합이 곧 파이프라인** — `mesh-to-obj`(포맷 변환) → `urdf-to-mjcf`(MJCF 변환)가 깔끔히 맞물렸다. 3-2의 "여러 스킬을 조합"이 실물로 증명됐고, 트리거를 구체적으로 나눠 둔 게 충돌을 막았다.
+3. **실패를 사람 대신 원인별로 분류** — 32개 실패를 스크립트가 분류해주니 처방이 곧장 보였다: glb는 변환, 과대 메시는 단순화, 누락은 못 살림. 무엇을 고칠지가 데이터로 나왔다.
+4. **증분 확장이 쉬움** — 1차 실패를 보고 두 번째 스킬(`mesh-to-obj`)을 끼워 넣어 53%→81%로 올렸다. 스킬이 모듈이라 전체를 다시 짜지 않고 한 조각만 추가하면 됐다.
+5. **진단을 추측이 아니라 측정으로** — MuJoCo가 "ASCII 파일일 수도"라고 한 것을 스크립트로 헤더를 까보니 사실은 face>200000 초과였다. 스킬에 환각 방지(원문 메시지 인용)를 넣어 둔 덕에 잘못된 처방으로 새지 않았다.
+6. **팀 공유·영구화** — 스킬과 결과를 git에 올리니 동료가 클론만으로 같은 변환 파이프라인을 갖는다. 3-1의 "스킬 = 공용자산"이 손에 잡혔다.
+
+> 계획서의 `context: fork`(격리 감사)는 보류했다. convert가 컴파일 시점에 모델을 검증해 별도 감사 스킬 없이도 실패가 드러났기 때문. 무거운 감사를 떼어낼 다음 후보로 남긴다.
