@@ -1,90 +1,131 @@
-# 3장 스킬 연습 프로젝트 계획 — `urdf-preflight`
+# 3장 스킬 연습 프로젝트 계획 — `urdf-to-mjcf`
 
-> ch2 기획서([../../ch02/이정연/ITEM.md](../../ch02/이정연/ITEM.md))의 1순위 MVP `urdf2usd`에서 **스킬 레이어 하나만** 떼어내, 3장에서 배운 스킬 개념을 전부 한 번씩 적용해보는 연습.
+> ch2 기획서([../../ch02/이정연/ITEM.md](../../ch02/이정연/ITEM.md))는 Isaac Sim의 URDF→USD였지만, **지금 맥북에서는 MuJoCo만 돌아가므로 URDF→MJCF로 바꾼다.** 변환 과정에서 배운 3장 스킬 개념을 전부 한 번씩 적용해보는 연습.
 >
 > ch2가 "플러그인(스킬+서브에이전트+MCP+훅)"이었다면, ch3 연습은 **잘 만든 스킬 한 개**가 목표다. 훅·MCP는 범위에서 뺀다.
+
+> ✅ **구현 완료 (2026-06-21)**: 아래 계획을 실제 프로젝트(`isaacgym_allegro_hand`)에 만들어 동작 검증까지 끝냈다. 결과 요약은 맨 아래 "구현 결과" 절 참고.
 
 ---
 
 ## 1. 목적 정의 (스킬 개발 1단계)
 
-- **무엇**: URDF를 USD로 임포트하기 **전에** URDF를 점검(린트)해, 임포터가 "성공"이라 말하지만 조용히 틀어지는 케이스를 미리 잡는 스킬.
-- **왜 스킬인가**: URDF→USD 임포터는 이미 내장(`isaacsim.asset.importer.urdf`)이라 변환 자체는 재구현하지 않는다. 만들 가치는 **반복되는 사전 점검 절차를 박제**하는 데 있고, 이건 정확히 "정형 절차를 굳히는" 스킬의 역할이다.
-- **잡을 대상**(ITEM.md §11에서 도출): limit 없는 mimic 조인트, planar 조인트 미지원, 하이픈 경로 네이밍, 관성·질량 0, 풀리지 않는 `package://`.
+- **무엇**: URDF를 MuJoCo MJCF로 변환하되, 변환 전후에 점검을 붙여 **컴파일은 "성공"이지만 거동이 조용히 틀어지는** 케이스를 잡는 스킬.
+- **왜 스킬인가**: MuJoCo는 컴파일러가 URDF를 직접 읽어 MJCF로 만들 수 있다(변환 자체는 내장). 그래서 변환기를 새로 짜는 게 아니라 **반복되는 변환 규약·점검 절차를 박제**하는 게 핵심 — 정확히 스킬의 역할이다.
+- **MuJoCo로 바꾼 이유**: 맥북(Apple Silicon)에서 Isaac Sim은 안 돌고 MuJoCo는 잘 돈다. 도메인(로보틱스 sim)·테마(조용한 변환 실패 잡기)는 그대로 두고 백엔드만 교체.
 
-## 2. 스킬 디렉터리 구조 (점진적 작동 3단계에 맞춤)
+## 2. URDF→MJCF에서 잡을 "조용한 실패" (MuJoCo 특유)
+
+> 근거는 MuJoCo XML Reference / Modeling 문서 기준. 정확한 문서 앵커·동작은 빌드 시 실제 컴파일로 재확인(아래 9절 검증에 포함).
+
+| 함정 | 증상 | 처리 |
+|------|------|------|
+| `<mujoco>` 확장 태그 누락 | URDF에 `<mujoco><compiler meshdir=.../></mujoco>`가 없으면 메시 경로·옵션을 못 잡아 컴파일 실패/경고 | 사전 린트로 경고 + 템플릿 제안 |
+| mimic 조인트 | URDF `mimic`은 MJCF에 직접 대응 없음 → 그냥 빠져 종속 관절이 안 따라옴 | `<equality><joint>` 제약으로 변환 안내 |
+| 관성·질량 0/비물리 | inertia가 0이거나 삼각부등식 위반이면 불안정·발산 | `balanceinertia`/`inertiafromgeom` 적용 여부를 명시적으로 결정 |
+| 콜라이더 = 볼록 껍질 | MuJoCo는 메시를 convex hull로 처리 → 오목 형상이 조용히 부풀어 접촉이 틀림 | 오목 메시는 분해(decomp) 필요 경고 |
+| 액추에이터 부재 | URDF엔 액추에이터가 없어 변환된 MJCF는 제어 불가 상태 | 변환 후 액추에이터 추가가 필요함을 리포트 |
+| `package://` 미해결 | 메시 경로가 안 풀려 로드 실패 | 사전 린트로 경로 해석 점검 |
+| 단위·스케일 | `angle`(rad/deg)·mesh scale 가정 차이로 조용한 왜곡 | compiler 옵션 명시 강제 |
+| floating base | URDF 루트 링크 처리에 따라 free joint 유무가 달라짐 | 의도(고정/플로팅)를 입력으로 받아 확정 |
+
+## 3. 스킬 디렉터리 구조 (점진적 작동 3단계에 맞춤)
 
 ```
-urdf-preflight/
+urdf-to-mjcf/
 ├── SKILL.md          # L1 메타데이터 + L2 절차(500줄 이내, 체크리스트만)
-├── reference.md      # L3 — "조용한 실패" 카탈로그(증상·근거 이슈번호)
+├── reference.md      # L3 — 위 "조용한 실패" 카탈로그(증상·근거)
 ├── EXAMPLES.md       # L3 — 입출력 예시(정상 1 + 문제 1)
 └── scripts/
-    ├── lint_urdf.py        # 결정론적 URDF 검사기
-    └── requirements.txt    # 종속성
+    ├── lint_urdf.py        # 변환 전 결정론적 URDF 검사기
+    ├── convert.py          # mujoco 컴파일러로 URDF→MJCF + 경고 캡처
+    └── requirements.txt    # mujoco 등 종속성
 ```
 
 - **L1 메타데이터**: `name` + `description`만 세션 시작 시 로딩.
-- **L2 SKILL.md 본문**: 호출될 때만 로딩. 절차 체크리스트와 스크립트 사용법만 담아 짧게.
-- **L3 지원 파일**: `reference.md`·`EXAMPLES.md`·`scripts/`는 모델이 필요할 때만 Read. 본문에 다 넣지 않는 게 핵심.
+- **L2 SKILL.md 본문**: 호출될 때만 로딩. 변환 절차와 스크립트 사용법만 짧게.
+- **L3 지원 파일**: `reference.md`·`EXAMPLES.md`·`scripts/`는 필요할 때만 Read. 본문에 다 넣지 않는다.
 - 주의: 지원 파일이 다른 지원 파일을 불러오지 않게 한다(부분 읽기 위험).
 
-## 3. SKILL.md 프론트매터 설계
+## 4. SKILL.md 프론트매터 설계
 
 | 필드 | 값(안) | 이유 |
 |------|--------|------|
-| `name` | `urdf-preflight` | 스킬이 하는 행위 |
-| `description` | "URDF를 Isaac Sim USD로 임포트하기 전에 mimic 조인트·planar 조인트·경로 네이밍·관성/질량 0·package:// 미해결을 린트한다. URDF 변환·임포트 전 점검 요청 시 발동." | **언제 발동하는지를 구체적 트리거 용어로**. 다른 스킬과 겹치지 않게 "URDF 변환 전"을 명시 |
-| `allowed-tools` | `Read, Bash` | 검사 스크립트 실행만 사전 승인. 권한 범위를 좁혀 보안 |
+| `name` | `urdf-to-mjcf` | 스킬이 하는 행위 |
+| `description` | "URDF를 MuJoCo MJCF로 변환한다. 변환 전 mimic·관성 0·package:// 미해결·`<mujoco>` 태그 누락을 린트하고, 변환 후 거동 함정을 점검한다. URDF를 MuJoCo로 옮기거나 mjcf 변환 요청 시 발동." | **언제 발동하는지 구체적 트리거로**. "MuJoCo/mjcf 변환"을 명시해 다른 sim 스킬과 충돌 회피 |
+| `allowed-tools` | `Read, Bash` | 린트·변환 스크립트 실행만 사전 승인. 권한 범위 축소 |
 
-## 4. 스크립트 우선 전략
+## 5. 스크립트 우선 전략
 
-- URDF 파싱·규칙 검사는 토큰을 쓸 필요 없는 **결정론적 작업** → `scripts/lint_urdf.py`로 빼고, SKILL.md에는 **사용법만** 적는다(`python scripts/lint_urdf.py <urdf>` → JSON 리포트).
-- 오류 상황은 클로드에 넘기지 않고 스크립트 안에서 직접 처리:
-  - 실행 권한 / 종속성 설치 여부(없으면 requirements 안내) / 경로가 유닉스 슬래시인지.
-- 모델은 스크립트의 **결과(JSON)만** 컨텍스트로 받아 판단 → 토큰 비용 최소화.
+- URDF 파싱·규칙 검사와 MuJoCo 컴파일은 **결정론적 작업** → `scripts/`로 빼고 SKILL.md엔 **사용법만**.
+  - `lint_urdf.py <urdf>` → 변환 전 경고 JSON.
+  - `convert.py <urdf> <out.xml>` → `mujoco.MjModel.from_xml_path`로 컴파일, **컴파일러 경고/에러를 캡처**해 JSON으로.
+- 오류 상황은 클로드에 넘기지 않고 스크립트가 직접 처리: 실행 권한 / `mujoco` 설치 여부(없으면 requirements 안내) / 경로가 유닉스 슬래시인지.
+- 모델은 스크립트 **결과(JSON)만** 받아 판단 → 토큰 비용 최소화. (MuJoCo 컴파일러 경고를 사람 대신 읽어주는 게 핵심 가치)
 
-## 5. 환각 방지 지침 (SKILL.md 본문에 명시)
+## 6. 환각 방지 지침 (SKILL.md 본문에 명시)
 
-- **불확실성 표현 허용**: 규칙으로 단정할 수 없는 항목은 "확인 필요"로 표기하고 단정하지 않는다.
-- **지식 범위 제한**: 판단 근거는 공식 임포터 문서와 `reference.md`의 알려진 이슈로 한정. 추측으로 새 규칙을 만들지 않는다.
-- **출처 명시**: 각 경고에 근거(이슈 번호·문서 링크)를 함께 출력해 신뢰성 확보.
+- **불확실성 표현 허용**: 규칙으로 단정 못 하는 항목은 "확인 필요"로 표기.
+- **지식 범위 제한**: 판단 근거는 MuJoCo 공식 문서와 `reference.md`로 한정. 추측으로 새 규칙을 만들지 않는다.
+- **출처 명시**: 각 경고에 근거(MuJoCo 문서 섹션·컴파일러 메시지)를 함께 출력.
 
-## 6. 입출력 예시 (EXAMPLES.md로 분리)
+## 7. 입출력 예시 (EXAMPLES.md로 분리)
 
-대표 예시 2개만 둔다(나머지 엣지 케이스는 reference로):
-1. **정상 URDF** → 경고 0, "임포트 진행 가능".
-2. **mimic 조인트에 limit 없음** → 경고 1건 + 근거 이슈 + 자동수정 제안(finite limit 추가).
+대표 예시 2개만(나머지 엣지 케이스는 reference로):
+1. **정상 URDF** → 경고 0, MJCF 생성, "로드 가능".
+2. **mimic 조인트 + `<mujoco>` 태그 없음** → 경고 2건 + 근거 + 자동수정 제안(equality 제약 변환 / compiler 태그 템플릿).
 
-## 7. context: fork 적용 — 발표 핵심의 실전
+## 8. context: fork 적용 — 발표 핵심의 실전
 
-- 변환 **후** USD 감사(Looks 비었나, fixed-joint 병합으로 바디 수 변했나, 콜라이더가 진짜 convex decomp인가)는 로그·USD 덤프가 커서 메인 대화를 오염시킨다.
-- 그래서 감사 단계는 **별도 스킬 `usd-audit`로 분리하고 `context: fork`** 를 건다.
+- 변환 **후** 점검(MJCF 트리 감사, 컴파일러 경고 대량, 접촉/관성 점검)은 로그가 커서 메인 대화를 오염시킨다.
+- 그래서 감사 단계는 **별도 스킬 `mjcf-audit`로 분리하고 `context: fork`** 를 건다.
   - `context: fork` → 부모 대화와 분리된 서브에이전트 컨텍스트에서 실행, **결과(감사 리포트)만 반환**.
-  - `agent: Explore` → USD 트리·로그 탐색에 맞는 모드.
+  - `agent: Explore` → MJCF 트리·로그 탐색에 맞는 모드.
   - `allowed-tools: Read, Bash` → 격리 + 도구 권한 제한 동시 달성.
-- 구분: 이건 본문에서 Task로 일꾼을 부르는 것과 다르다. **스킬 자체가 포크**되어 부모 히스토리에 접근하지 못한다.
+- 구분: 본문에서 Task로 일꾼을 부르는 것과 다르다. **스킬 자체가 포크**되어 부모 히스토리에 접근하지 못한다.
 
-## 8. 재사용 패턴 / 버전 관리
+## 9. 재사용 패턴 / 버전 관리
 
-- **패턴 분류**: 로보틱스(Isaac Sim) **도메인 특화 패턴**. description에 트리거를 충분히 담아 다른 URDF 작업에서도 자동 발동되게.
-- **Version History**: Isaac Sim 6.0 / IsaacLab-Arena가 alpha라 임포터 동작이 버전 따라 바뀐다 → SKILL.md에 Version History 섹션을 두고 규칙 변경 이력을 기록.
+- **패턴 분류**: 로보틱스(MuJoCo) **도메인 특화 패턴**. description에 트리거를 충분히 담아 다른 URDF→MuJoCo 작업에서도 자동 발동.
+- **Version History**: MuJoCo 버전에 따라 컴파일러 옵션·경고가 바뀐다 → SKILL.md에 Version History 섹션을 두고 규칙·검증 대상 MuJoCo 버전을 기록.
 
-## 9. 테스트와 검증
+## 10. 테스트와 검증
 
-1. `description`이 구체적인지(URDF 변환 전이라는 트리거가 명확한지) 확인.
+1. `description`이 구체적인지(MuJoCo/mjcf 변환 트리거가 명확한지) 확인.
 2. 스킬 디렉터리 경로 확인.
 3. YAML 프론트매터 유효성 검사.
 4. `claude --debug`로 스킬 로딩 과정 확인.
+5. **실물 검증**: 샘플 URDF를 실제로 `convert.py`로 돌려 MJCF가 MuJoCo에서 로드되는지(2절 함정 카탈로그를 실제 컴파일 경고와 대조) 확인.
 
-## 10. 단계 로드맵 (솔로 완결 기준)
+## 11. 단계 로드맵 (솔로 완결 기준)
 
-1. **1단계**: `lint_urdf.py` + SKILL.md(린트 절차) + reference.md. 사전 린트만으로 즉시 체감.
-2. **2단계**: EXAMPLES.md 보강 + `usd-audit` 스킬에 `context: fork` 적용(변환 후 감사).
+1. **1단계**: `lint_urdf.py` + `convert.py`(mujoco 컴파일) + SKILL.md + reference.md. 변환 + 사전 린트만으로 즉시 체감.
+2. **2단계**: EXAMPLES.md 보강 + `mjcf-audit` 스킬에 `context: fork` 적용(변환 후 감사).
 3. **3단계**: Version History 정착, 다른 URDF에서 자동 발동되는지 트리거 점검.
 
-## 11. 성공 기준
+## 12. 성공 기준
 
-- 변환 후 sim을 돌려보고서야 버그를 찾는 횟수 감소(반복 점검이 스킬로 자동화됨).
-- mimic·planar 등 알려진 조용한 실패가 임포트로 새는 일 감소.
+- MuJoCo에 직접 로드해보고서야 거동 문제를 찾는 횟수 감소(반복 점검이 스킬로 자동화됨).
+- mimic 누락·`<mujoco>` 태그 누락·비물리 관성 같은 조용한 실패가 변환 결과로 새는 일 감소.
 - 스킬 토큰 비용이 본문에 몰리지 않고 L1/L2/L3로 잘 분산됐는지(점진적 작동이 실제로 작동하는지) 확인.
+
+---
+
+## 13. 구현 결과 (실제 적용 완료 · 2026-06-21)
+
+계획을 내 로보틱스 프로젝트 `isaacgym_allegro_hand`에 실제 스킬로 만들어 검증했다.
+
+- **위치**: `isaacgym_allegro_hand/.claude/skills/urdf-to-mjcf/` (프로젝트 스킬)
+- **구성**: `SKILL.md` + `reference.md` + `EXAMPLES.md` + `scripts/{lint_urdf.py, convert.py, requirements.txt}`
+- **대상**: `robots/hands/` 의 URDF **68개**.
+
+**검증된 결과**
+- `lint_urdf.py`(stdlib만, mujoco 불필요): 68개 스캔 → **382 blocking** 검출(`.glb`/`.dae` 메시 error, mimic·0관성·`no-mujoco-tag` warn).
+- `convert.py`(mujoco 3.3.5, MjSpec): **36 변환 / 32 실패**. 실패는 전부 실제 원인 — `_glb`/dae 메시 미지원, ASCII STL(v6), 누락 메시(plexus_meta), URDF 구조 오류(meta_y).
+
+**디버깅으로 찾은 핵심**
+- MuJoCo URDF 파서가 메시 경로를 basename으로 strip(`./meshes/STL_s/Palm.STL`→`Palm.STL`)해 처음엔 67/68이 실패.
+- `convert.py`가 변환 직전 URDF에 `<mujoco><compiler strippath="false" balanceinertia="true">` 블록을 **임시 주입**(원본 불변)해 해결 → 36개 정상 변환. 린터의 `no-mujoco-tag` 경고와 정확히 연결되는 처방.
+
+**계획 대비 변경**
+- `context: fork` 분리 감사(`mjcf-audit`)는 이번 범위에서 보류 — convert가 컴파일 시점에 모델을 검증하므로 별도 감사 스킬 없이도 실패가 드러났다. 다음 단계(메시 포맷 일괄 변환 자동화)에서 재검토.
