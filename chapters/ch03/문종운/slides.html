@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CH03 — 에이전트 스킬</title>
+<style>
+  /* ── 리셋 & 기본 ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --accent:    #58a6ff;
+    --accent2:   #3fb950;
+    --warn:      #f0883e;
+    --muted:     #8b949e;
+    --text:      #e6edf3;
+    --text-sub:  #b1bac4;
+    --code-bg:   #1c2128;
+    --chip-bg:   #1f3a5f;
+    --chip-text: #79c0ff;
+    --progress:  #238636;
+    --font-sys:  -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                 Arial, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas,
+                 "Courier New", monospace;
+    --radius:    8px;
+    --slide-w:   min(100vw, 1200px);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sys);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── 진행률 바 ── */
+  #progress-bar-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 100;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.35s ease;
+    width: 0%;
+  }
+
+  /* ── 슬라이드 컨테이너 ── */
+  #deck {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 64px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  /* ── 클릭 영역 ── */
+  #click-prev {
+    position: fixed;
+    top: 0; left: 0;
+    width: 40%; height: 100%;
+    z-index: 10;
+    cursor: w-resize;
+  }
+  #click-next {
+    position: fixed;
+    top: 0; right: 0;
+    width: 60%; height: 100%;
+    z-index: 10;
+    cursor: e-resize;
+  }
+
+  /* ── 슬라이드 카운터 ── */
+  #counter {
+    position: fixed;
+    bottom: 20px; right: 28px;
+    font-size: 13px;
+    color: var(--muted);
+    z-index: 50;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── 내용 컨테이너 ── */
+  .slide-inner {
+    width: 100%;
+    max-width: 900px;
+    position: relative;
+    z-index: 20;
+  }
+
+  /* ── 타이포 ── */
+  .slide-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+
+  .slide-title {
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .slide-title .accent { color: var(--accent); }
+  .slide-title .accent2 { color: var(--accent2); }
+
+  .slide-subtitle {
+    font-size: clamp(14px, 2vw, 20px);
+    color: var(--text-sub);
+    margin-bottom: 32px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .slide-lead {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 36px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .slide-lead span { display: flex; align-items: center; gap: 6px; }
+  .slide-lead .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* ── 불릿 목록 ── */
+  .bullets {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bullets li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: clamp(14px, 1.8vw, 18px);
+    line-height: 1.6;
+    color: var(--text-sub);
+  }
+  .bullets li .bi {
+    flex-shrink: 0;
+    margin-top: 4px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .bullets li strong, .bullets li b {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .bullets.sub li .bi { background: var(--muted); width: 5px; height: 5px; margin-top: 6px; }
+  .bullets.sub li { font-size: clamp(13px, 1.5vw, 16px); color: var(--muted); }
+
+  /* ── 코드/chip 스타일 ── */
+  code, .chip {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 4px;
+    padding: 1px 7px;
+    white-space: nowrap;
+  }
+  .chip-warn {
+    background: rgba(240,136,62,0.15);
+    color: var(--warn);
+    border-color: rgba(240,136,62,0.3);
+  }
+  .chip-green {
+    background: rgba(63,185,80,0.12);
+    color: var(--accent2);
+    border-color: rgba(63,185,80,0.25);
+  }
+
+  /* ── 섹션 헤더 ── */
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(88,166,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin-bottom: 18px;
+  }
+
+  /* ── 주석(footnote) ── */
+  .footnote {
+    margin-top: 24px;
+    padding: 10px 16px;
+    border-left: 3px solid var(--warn);
+    background: rgba(240,136,62,0.07);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13px;
+    color: var(--warn);
+    line-height: 1.55;
+  }
+  .footnote strong { color: var(--warn); }
+
+  /* ── 2열 그리드 ── */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+  }
+  .col-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+  }
+  .col-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .col-card .num {
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── 테이블 ── */
+  .table-wrap {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 62vh;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(11px, 1.2vw, 13px);
+  }
+  thead th {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.018); }
+  tbody td {
+    padding: 9px 14px;
+    color: var(--text-sub);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tbody td:first-child {
+    font-family: var(--font-mono);
+    color: var(--chip-text);
+    white-space: nowrap;
+    font-size: 0.9em;
+  }
+  tbody td.req-no { color: var(--muted); }
+  tbody td.req-rec { color: var(--accent2); font-weight: 600; }
+  tbody td .highlight { color: var(--text); font-weight: 600; }
+
+  /* ── 루프 다이어그램 ── */
+  .loop-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .loop-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-size: clamp(13px, 1.5vw, 16px);
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    min-width: 110px;
+  }
+  .loop-node.hl { border-color: var(--accent); color: var(--accent); }
+  .loop-arrow {
+    font-size: 20px;
+    color: var(--muted);
+    padding: 0 6px;
+  }
+  .loop-back {
+    display: block;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 큰 인용 ── */
+  .big-quote {
+    font-size: clamp(22px, 3.5vw, 44px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    text-align: center;
+  }
+  .big-quote .hl { color: var(--accent2); }
+  .big-quote .hl2 { color: var(--accent); }
+
+  /* ── 계층 목록 ── */
+  .hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hier-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+  }
+  .hier-num {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .hier-content { flex: 1; }
+  .hier-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .hier-desc { font-size: 13px; color: var(--muted); }
+  .hier-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warn);
+    background: rgba(240,136,62,0.12);
+    border: 1px solid rgba(240,136,62,0.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .hier-badge.green {
+    color: var(--accent2);
+    background: rgba(63,185,80,0.1);
+    border-color: rgba(63,185,80,0.25);
+  }
+
+  /* ── 배경 장식 ── */
+  .bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-glow-1 {
+    width: 600px; height: 600px;
+    background: var(--accent);
+    top: -200px; right: -200px;
+  }
+  .bg-glow-2 {
+    width: 500px; height: 500px;
+    background: var(--accent2);
+    bottom: -200px; left: -150px;
+  }
+
+  /* ── 반응형 ── */
+  @media (max-width: 768px) {
+    .slide { padding: 36px 28px; }
+    .cols { grid-template-columns: 1fr; gap: 14px; }
+    #counter { bottom: 14px; right: 16px; }
+    .loop-flow { gap: 0; }
+    .loop-node { min-width: 80px; padding: 10px 12px; }
+  }
+  @media (max-width: 480px) {
+    .slide { padding: 24px 18px; }
+  }
+
+  /* ── 키 힌트 ── */
+  #key-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 28px;
+    font-size: 11px;
+    color: var(--border);
+    z-index: 50;
+    letter-spacing: 0.03em;
+  }
+
+  /* ════════════════════════════════════════
+     CH03 추가 컴포넌트
+  ════════════════════════════════════════ */
+
+  /* ── 위치 비교 카드 (슬라이드3) ── */
+  .loc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    overflow: hidden;
+    position: relative;
+  }
+  .loc-card.global { border-color: var(--accent); }
+  .loc-card.project { border-color: var(--accent2); }
+  .loc-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .loc-card.global h3 { color: var(--accent); }
+  .loc-card.project h3 { color: var(--accent2); }
+  .loc-card .path {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--chip-text);
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  /* ── 펄스 애니메이션 (슬라이드3 비교) ── */
+  @keyframes pulse-global {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(88,166,255,0); border-color: var(--accent); }
+    50%       { box-shadow: 0 0 0 6px rgba(88,166,255,0.18); border-color: rgba(88,166,255,0.9); }
+  }
+  @keyframes pulse-project {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); border-color: var(--accent2); }
+    50%       { box-shadow: 0 0 0 6px rgba(63,185,80,0.18); border-color: rgba(63,185,80,0.9); }
+  }
+  .slide.active .loc-card.global  { animation: pulse-global  2.4s ease-in-out infinite; }
+  .slide.active .loc-card.project { animation: pulse-project 2.4s ease-in-out 1.2s infinite; }
+
+  /* ── 디렉토리 트리 ── */
+  .tree {
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.3vw, 14px);
+    color: var(--text-sub);
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    line-height: 1.9;
+  }
+  .tree .t-dir  { color: var(--accent); font-weight: 700; }
+  .tree .t-req  { color: var(--accent2); font-weight: 700; }
+  .tree .t-opt  { color: var(--muted); }
+  .tree .t-note { color: var(--warn); font-size: 0.88em; }
+
+  /* ── disable-model-invocation 대비 (슬라이드5) ── */
+  @keyframes blink-true {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.25; }
+  }
+  @keyframes blink-false {
+    0%, 100% { opacity: 1; }
+  }
+  .dmi-true  { color: var(--warn); font-weight: 700; }
+  .dmi-false { color: var(--accent2); font-weight: 700; }
+  .slide.active .dmi-blink { animation: blink-true 1.4s step-end infinite; }
+  .slide.active .dmi-stable { animation: blink-false 1.4s linear infinite; }
+
+  /* ── 3단계 점진적 로딩 다이어그램 (슬라이드6) ── */
+  .loading-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .stage-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    opacity: 0.25;
+    transition: opacity 0.4s;
+  }
+  .stage-num {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    width: 32px;
+    flex-shrink: 0;
+  }
+  .stage-label {
+    flex: 1;
+  }
+  .stage-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .stage-desc { font-size: 12px; color: var(--muted); }
+  .stage-badge {
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2px 10px;
+    white-space: nowrap;
+  }
+  .badge-all {
+    background: rgba(88,166,255,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(88,166,255,0.3);
+  }
+  .badge-match {
+    background: rgba(63,185,80,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(63,185,80,0.3);
+  }
+  .badge-need {
+    background: rgba(240,136,62,0.12);
+    color: var(--warn);
+    border: 1px solid rgba(240,136,62,0.3);
+  }
+
+  @keyframes light-up-1 {
+    0%,  15% { opacity: 0.25; }
+    20%,  45% { opacity: 1; }
+    50%, 100% { opacity: 0.25; }
+  }
+  @keyframes light-up-2 {
+    0%,  30% { opacity: 0.25; }
+    35%,  60% { opacity: 1; }
+    65%, 100% { opacity: 0.25; }
+  }
+  @keyframes light-up-3 {
+    0%,  50% { opacity: 0.25; }
+    55%,  80% { opacity: 1; }
+    85%, 100% { opacity: 0.25; }
+  }
+  .slide.active .stage-row:nth-child(1) { animation: light-up-1 3.6s ease-in-out infinite; }
+  .slide.active .stage-row:nth-child(2) { animation: light-up-2 3.6s ease-in-out infinite; }
+  .slide.active .stage-row:nth-child(3) { animation: light-up-3 3.6s ease-in-out infinite; }
+
+  /* ── 확률 vs 결정론 (슬라이드7) ── */
+  .gate-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    overflow: hidden;
+    position: relative;
+  }
+  .gate-col h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .gate-col.prob h3  { color: var(--warn); }
+  .gate-col.deter h3 { color: var(--accent2); }
+
+  /* 누수 애니메이션: 빨간 방울이 틈새로 새는 효과 */
+  @keyframes leak-drip {
+    0%   { transform: translateY(-10px); opacity: 0; }
+    15%  { opacity: 1; }
+    80%  { transform: translateY(48px); opacity: 0.6; }
+    100% { transform: translateY(60px); opacity: 0; }
+  }
+  @keyframes leak-gate-shake {
+    0%, 90%, 100% { transform: translateX(0); }
+    10%  { transform: translateX(-2px); }
+    30%  { transform: translateX(2px); }
+    50%  { transform: translateX(-1px); }
+    70%  { transform: translateX(1px); }
+  }
+  /* 완전 차단 애니메이션: 초록 방패가 밀어냄 */
+  @keyframes block-pulse {
+    0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(63,185,80,0); }
+    40%       { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(63,185,80,0.2); }
+  }
+  @keyframes block-reject {
+    0%   { transform: translateX(0); opacity: 1; }
+    30%  { transform: translateX(10px); opacity: 0.5; }
+    50%  { transform: translateX(0); opacity: 0; }
+    100% { transform: translateX(0); opacity: 0; }
+  }
+
+  .leak-vis {
+    position: relative;
+    height: 70px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .leak-rule {
+    position: absolute;
+    top: 8px; left: 0; right: 0;
+    height: 3px;
+    background: rgba(240,136,62,0.4);
+    border-radius: 2px;
+  }
+  .leak-rule::after {
+    content: '';
+    position: absolute;
+    left: 45%;
+    top: -4px;
+    width: 10%;
+    height: 11px;
+    background: var(--bg);
+  }
+  .leak-drip {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--warn);
+    margin-left: -4px;
+  }
+  .slide.active .gate-col.prob .leak-rule { animation: leak-gate-shake 2.8s ease-in-out infinite; }
+  .slide.active .leak-drip { animation: leak-drip 2.8s ease-in-out infinite; }
+
+  .block-vis {
+    position: relative;
+    height: 70px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .block-shield {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(63,185,80,0.12);
+    border: 2px solid var(--accent2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .block-ball {
+    position: absolute;
+    left: 20%;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--warn);
+    opacity: 0;
+  }
+  .slide.active .block-shield { animation: block-pulse 2.4s ease-in-out infinite; }
+  .slide.active .block-ball   { animation: block-reject 2.4s ease-in-out 0.4s infinite; }
+
+  /* ── context:fork 비교 (슬라이드12) ── */
+  @keyframes ctx-pollute {
+    0%   { background: var(--surface); border-color: var(--border); }
+    40%  { background: rgba(240,136,62,0.08); border-color: var(--warn); }
+    100% { background: var(--surface); border-color: var(--border); }
+  }
+  @keyframes ctx-isolate {
+    0%   { background: var(--surface); border-color: var(--border); }
+    40%  { background: rgba(63,185,80,0.07); border-color: var(--accent2); }
+    100% { background: var(--surface); border-color: var(--border); }
+  }
+  @keyframes ctx-token-up {
+    0%, 100% { transform: translateY(0); opacity: 0.3; }
+    50%       { transform: translateY(-12px); opacity: 1; }
+  }
+
+  .ctx-box {
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    min-height: 110px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ctx-box h4 {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .ctx-box.main-ctx { }
+  .ctx-box.fork-box { }
+  .ctx-token {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--warn);
+    position: absolute;
+    right: 12px; bottom: 10px;
+  }
+  .slide.active .cols-fork .col-card:first-child .ctx-box.main-ctx {
+    animation: ctx-pollute 3s ease-in-out infinite;
+  }
+  .slide.active .cols-fork .col-card:last-child .ctx-box.fork-box {
+    animation: ctx-isolate 3s ease-in-out infinite;
+  }
+  .slide.active .ctx-token { animation: ctx-token-up 3s ease-in-out infinite; }
+
+  .cols-fork {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<!-- 배경 글로우 -->
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- 진행률 바 -->
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+
+<!-- 클릭 내비 영역 -->
+<div id="click-prev" onclick="navigate(-1)"></div>
+<div id="click-next" onclick="navigate(1)"></div>
+
+<!-- 슬라이드 카운터 -->
+<div id="counter">1 / 13</div>
+
+<!-- 키 힌트 -->
+<div id="key-hint">← → Space · 좌/우 클릭</div>
+
+<!-- ══════════════════════════════════════════════
+     슬라이드 덱
+══════════════════════════════════════════════ -->
+<div id="deck">
+
+  <!-- ─────────────── SLIDE 1 : 타이틀 ─────────────── -->
+  <div class="slide active" id="s1">
+    <div class="slide-inner">
+      <div class="slide-tag">Claude Code Agentic Study · 2026</div>
+      <h1 class="slide-title">
+        CHAPTER 03<br>
+        <span class="accent">에이전트 스킬</span>
+      </h1>
+      <p class="slide-subtitle">
+        description은 광고문이고, 보장은 hook이 한다
+      </p>
+      <div class="slide-lead">
+        <span><span class="dot"></span>발표: 문종운</span>
+        <span><span class="dot" style="background:var(--accent)"></span>총 13 슬라이드</span>
+        <span><span class="dot" style="background:var(--muted)"></span>§1–§9 커버</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 2 : Agenda ─────────────── -->
+  <div class="slide" id="s2">
+    <div class="slide-inner">
+      <div class="section-label">Agenda</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,36px)">오늘 다룰 <span class="accent">흐름</span></h2>
+      <div class="hierarchy" style="margin-top:20px">
+        <div class="hier-row">
+          <div class="hier-num">①</div>
+          <div class="hier-content">
+            <div class="hier-title">스킬 유형·위치</div>
+            <div class="hier-desc">개인(글로벌) vs 프로젝트 스킬 — 어디에 두나</div>
+          </div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">②</div>
+          <div class="hier-content">
+            <div class="hier-title">디렉토리 구조 · 프론트매터</div>
+            <div class="hier-desc">SKILL.md 필수 필드, 1depth-flat 원칙</div>
+          </div>
+        </div>
+        <div class="hier-row" style="border-color:var(--accent)">
+          <div class="hier-num" style="color:var(--warn)">★</div>
+          <div class="hier-content">
+            <div class="hier-title" style="color:var(--warn)">3단계 점진적 로딩</div>
+            <div class="hier-desc">비용은 개수가 아니라 "열어본 횟수"에 비례</div>
+          </div>
+          <div class="hier-badge" style="color:var(--warn);background:rgba(240,136,62,0.12);border-color:rgba(240,136,62,0.25)">핵심</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">③</div>
+          <div class="hier-content">
+            <div class="hier-title">description 설계 · 예시 · 환각방지 · CLAUDE.md · context:fork</div>
+            <div class="hier-desc">발견가능성↑ vs 과범용↓ 균형, 격리 전략</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 3 : 스킬 유형·위치 (비교 2열 + 애니메이션) ─────────────── -->
+  <div class="slide" id="s3">
+    <div class="slide-inner">
+      <div class="section-label">§1 스킬 유형·위치</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">어디에 <span class="accent">두느냐</span>가 범위를 결정</h2>
+      <div class="cols" style="margin-top:20px">
+        <div class="loc-card global">
+          <h3>개인(글로벌) 스킬</h3>
+          <span class="path">~/.claude/skills/</span>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--text)">모든 프로젝트</strong>에서 공통 사용</span></li>
+            <li><span class="bi"></span><span>실측: <code>cmux</code>, <code>team</code>, <code>shorts</code>, <code>codebase-memory-*</code> 등 수십 개</span></li>
+            <li><span class="bi"></span><span>어느 프로젝트에서든 description 뜸</span></li>
+          </ul>
+        </div>
+        <div class="loc-card project">
+          <h3>프로젝트 스킬</h3>
+          <span class="path">&lt;프로젝트&gt;/.claude/skills/</span>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--text)">해당 프로젝트</strong>에서만 활성</span></li>
+            <li><span class="bi"></span><span>실측: <code>study-chapter</code>, <code>chapter-deck</code>, <code>order-session</code> 3개</span></li>
+            <li><span class="bi"></span><span>스터디 저장소에서만 의미있는 스킬 → 프로젝트 쪽이 맞다</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        정정: <code>projects/.claude/skills</code>가 아니라 <strong>프로젝트 루트의 <code>.claude/skills/</code></strong> — <code>projects/</code>라는 고정 폴더가 있는 게 아님
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 4 : 디렉토리 구조 ─────────────── -->
+  <div class="slide" id="s4">
+    <div class="slide-inner">
+      <div class="section-label">§2 디렉토리 구조</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><span class="accent2">1depth-flat</span> 원칙</h2>
+      <div class="tree" style="margin-top:20px">
+        <span class="t-dir">pdf-skill/</span><br>
+        ├── <span class="t-req">SKILL.md</span><span class="t-note">  ← 필수. 대소문자 정확히</span><br>
+        ├── <span class="t-opt">FORMS.md</span><span class="t-note">    ← 양식 채우기 가이드</span><br>
+        ├── <span class="t-opt">REFERENCE.md</span><span class="t-note"> ← 상세 API 레퍼런스</span><br>
+        └── <span class="t-opt">scripts/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="t-opt">fill_form.py</span>
+      </div>
+      <ul class="bullets" style="margin-top:20px">
+        <li><span class="bi"></span><span><strong>헬퍼 파일은 1depth 이내</strong> — 깊게 중첩하지 않는다(토큰·탐색 효율)</span></li>
+        <li><span class="bi"></span><span><code>SKILL.md</code>는 <strong>대소문자가 정확해야</strong> 인식됨</span></li>
+        <li><span class="bi"></span><span>실측: 내 프로젝트 스킬 3개 모두 SKILL.md 단일 파일(분량 작아 헬퍼 불필요)</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 5 : 프론트매터 + disable-model-invocation 비교 ─────────────── -->
+  <div class="slide" id="s5">
+    <div class="slide-inner">
+      <div class="section-label">§3 프론트매터</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)"><code style="font-size:0.65em">name</code> · <code style="font-size:0.65em">description</code>이 <span class="accent">전부</span></h2>
+      <div class="table-wrap" style="max-height:38vh;margin-top:14px">
+        <table>
+          <thead>
+            <tr><th>필드</th><th>의미</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>name</td><td>스킬 목록에 보이는 이름(생략 시 폴더명)</td></tr>
+            <tr><td>description</td><td class="highlight">무엇을+언제 사용. 클로드가 호출 여부를 판단하는 근거. <code>when_to_use</code>와 합쳐 1,536자 제한</td></tr>
+            <tr><td>disable-model-invocation</td><td><code>true</code>면 자동 로딩 금지 → <code>/name</code> 수동 호출만</td></tr>
+            <tr><td>argument-hint</td><td>자동완성 힌트. 예: <code>[챕터번호]</code></td></tr>
+            <tr><td>context: fork</td><td>격리된 서브에이전트 컨텍스트에서 실행(§9)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:13px;color:var(--muted)">실측 — <code>disable-model-invocation</code>:</span>
+        <span>
+          <code>study-chapter</code> <span class="dmi-true dmi-blink">true</span>
+        </span>
+        <span>
+          <code>chapter-deck</code> <span class="dmi-true dmi-blink">true</span>
+        </span>
+        <span>
+          <code>order-session</code> <span class="dmi-false dmi-stable" style="color:var(--accent2)">없음(자동)</span>
+        </span>
+      </div>
+      <div class="footnote" style="margin-top:12px">
+        <strong>왜 다른가?</strong> — 정리·슬라이드 스킬은 시점을 잡아 호출, 순서조정은 자동 호출돼도 무해
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 6 : ★ 3단계 점진적 로딩 ─────────────── -->
+  <div class="slide" id="s6">
+    <div class="slide-inner">
+      <div class="section-label" style="background:rgba(240,136,62,0.12);color:var(--warn);border-color:rgba(240,136,62,0.3)">§4 ★ 핵심 — 3단계 점진적 로딩</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">비용은 <span style="color:var(--warn)">개수</span>가 아니라 <span class="accent2">"열어본 횟수"</span></h2>
+      <div class="loading-stages">
+        <div class="stage-row">
+          <div class="stage-num">L1</div>
+          <div class="stage-label">
+            <div class="stage-title">메타데이터 선제 로딩</div>
+            <div class="stage-desc">모든 스킬의 <code>name</code> + <code>description</code>만 미리 컨텍스트에 올린다</div>
+          </div>
+          <span class="stage-badge badge-all">전 스킬</span>
+        </div>
+        <div class="stage-row">
+          <div class="stage-num">L2</div>
+          <div class="stage-label">
+            <div class="stage-title">SKILL.md 본문 로딩</div>
+            <div class="stage-desc">지금 요청이 description과 매칭되면 그때 본문을 컨텍스트에 추가</div>
+          </div>
+          <span class="stage-badge badge-match">매칭 시</span>
+        </div>
+        <div class="stage-row">
+          <div class="stage-num">L3</div>
+          <div class="stage-label">
+            <div class="stage-title">리소스 개별 로딩</div>
+            <div class="stage-desc"><code>REFERENCE.md</code>, <code>scripts/*</code> 등 실제로 필요한 순간에 하나씩</div>
+          </div>
+          <span class="stage-badge badge-need">필요 시</span>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:14px">
+        <strong>산 증거</strong> — 이 세션에서 수십 개 스킬이 description 한 줄씩만 떠 있다가, <code>/study-chapter</code> 호출 시 그제서야 SKILL.md 67줄이 들어왔다
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 7 : 확률 vs 결정론 게이트 ─────────────── -->
+  <div class="slide" id="s7">
+    <div class="slide-inner">
+      <div class="section-label">§4 확률 vs 결정론</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">지침은 <span style="color:var(--warn)">확률적</span>, hook은 <span class="accent2">결정론적</span></h2>
+      <div class="cols" style="margin-top:20px">
+        <div class="gate-col prob">
+          <h3>description · SKILL.md 지침</h3>
+          <div class="leak-vis">
+            <div class="leak-rule"></div>
+            <div class="leak-drip"></div>
+          </div>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>읽고 따름 — 가끔 새는 경우 있음</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">강제력 없음</strong></span></li>
+            <li><span class="bi"></span><span>예: "적용예시는 실측, 추정 금지"</span></li>
+          </ul>
+        </div>
+        <div class="gate-col deter">
+          <h3>hook 게이트</h3>
+          <div class="block-vis">
+            <div class="block-ball"></div>
+            <div class="block-shield">🛡</div>
+          </div>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>코드가 막음 — 100% 보장</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">결정론적 차단</strong></span></li>
+            <li><span class="bi"></span><span>실측: <code>cbm-code-discovery-gate</code> <code>PreToolUse</code>가 실제로 내 Read를 막음</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:14px">
+        <strong>결론</strong> — 확실히 보장해야 하는 게이트는 확률(지침)에 맡기지 말고 <strong>hook으로 결정론적으로</strong> 건다
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 8 : description 설계 ─────────────── -->
+  <div class="slide" id="s8">
+    <div class="slide-inner">
+      <div class="section-label">§5 description 설계</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">발견가능성↑ vs <span style="color:var(--warn)">과범용↓</span></h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span><strong>밀도↑ 발견가능성↑</strong> — 핵심 use case를 앞에, <code>when_to_use</code>와 합쳐 1,536자 한도</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span><strong>과범용 위험</strong> — 너무 넓으면 불필요한 상황에도 튀어나옴. 행위·주체·시점·입력을 좁혀 써야</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>직접 쓰기 어렵다면 <strong><code>skill-creator</code></strong> 스킬 활용</span>
+        </li>
+      </ul>
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="col-card" style="border-color:var(--accent2)">
+          <h3 style="color:var(--accent2);font-size:12px;margin-bottom:8px">좁히기 성공 — order-session</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6">"단원 리더가 <strong style="color:var(--text)">일요일 오후에</strong> 참여자들이 올린 글을 보고 발표 순서를 조정한다 … 인자로 챕터 번호를 받는다."</p>
+        </div>
+        <div class="col-card" style="border-color:var(--warn)">
+          <h3 style="color:var(--warn);font-size:12px;margin-bottom:8px">과범용 교훈 — 메모리 기록</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6">SKILL.md에 훅 우회 지침 넣었다가 git add 단계에서 classifier에 <strong style="color:var(--text)">차단</strong>됨 → description/지침은 넓게 잡으려다 사고</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 9 : 예시 & EXAMPLES.md 격리 ─────────────── -->
+  <div class="slide" id="s9">
+    <div class="slide-inner">
+      <div class="section-label">§6 예시 전달 & EXAMPLES.md 격리</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">예시는 <span class="accent">파일로 격리</span>하면 토큰 효율</h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li>
+          <span class="bi"></span>
+          <span>클로드는 <strong>예시를 주면 지침을 더 잘 따른다</strong></span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>예시까지 다 넣으면 SKILL.md가 비대 → 중간 흘려읽기로 오히려 놓침</span>
+        </li>
+        <li>
+          <span class="bi"></span>
+          <span>자세한 예시는 <code>EXAMPLES.md</code>로 격리(1depth-flat) → L3 단계에서 개별 로딩</span>
+        </li>
+      </ul>
+      <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">실측 — 내 스킬 현황</div>
+        <ul class="bullets sub">
+          <li><span class="bi"></span><span>현재 3개 스킬 모두 예시 <strong style="color:var(--text)">본문에 인라인</strong>(분량 작아 격리 불필요)</span></li>
+          <li><span class="bi"></span><span>도입 1순위: <code>chapter-deck</code>의 슬라이드 HTML 예시가 길어지면 <code>EXAMPLES.md</code>로 분리</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 10 : 환각 방지 3종 ─────────────── -->
+  <div class="slide" id="s10">
+    <div class="slide-inner">
+      <div class="section-label">§7 환각 방지</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">SKILL.md에 넣는 <span class="accent">방지 지침 3종</span></h2>
+      <div class="hierarchy" style="margin-top:20px">
+        <div class="hier-row">
+          <div class="hier-num">1</div>
+          <div class="hier-content">
+            <div class="hier-title">불확실성 표현 허용</div>
+            <div class="hier-desc">모르면 "모른다/불확실"이라고 말하게 허용</div>
+          </div>
+          <div class="hier-badge green">허용</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">2</div>
+          <div class="hier-content">
+            <div class="hier-title">지식 범위 제한</div>
+            <div class="hier-desc">확인된 범위 밖은 <strong style="color:var(--text)">추정 금지</strong> — 파일을 읽고 확인된 사실만</div>
+          </div>
+          <div class="hier-badge">제한</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">3</div>
+          <div class="hier-content">
+            <div class="hier-title">출처 명시</div>
+            <div class="hier-desc">근거가 된 파일·사실을 밝히게. 없으면 "아직 없음 + 도입한다면 어디에"로</div>
+          </div>
+          <div class="hier-badge green">명시</div>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        <strong>실측</strong> — <code>study-chapter</code>: "적용예시는 실측, 추정 금지 — 사용자의 실제 설정 파일을 읽고 확인된 사실만 쓴다" / <code>order-session</code>: "날짜 추정 금지(<code>date</code> 실행)"
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 11 : CLAUDE.md & @import ─────────────── -->
+  <div class="slide" id="s11">
+    <div class="slide-inner">
+      <div class="section-label">§8 CLAUDE.md & @import</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">카파시 4원칙 + <span class="accent">"사람은 방향, AI는 실행"</span></h2>
+      <div class="cols" style="margin-top:18px">
+        <div class="col-card">
+          <h3 style="font-size:12px;margin-bottom:10px">카파시(Karpathy) CLAUDE.md</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--text)">Think Before Coding</strong> — 가정 명시·혼란 숨기지 말 것</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">Simplicity First</strong> — 요청 이상 만들지 말 것</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">Surgical Changes</strong> — 요청과 직접 연결되는 줄만 수정</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">Goal-Driven</strong> — 검증 가능한 성공 기준으로 루프</span></li>
+          </ul>
+        </div>
+        <div class="col-card" style="border-color:var(--accent)">
+          <h3 style="color:var(--accent);font-size:12px;margin-bottom:10px">내 CLAUDE.md — 실측</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>"사람은 방향, AI는 실행" = Surgical+Goal</span></li>
+            <li><span class="bi"></span><span>"When unsure, <strong style="color:var(--text)">ask — don't guess</strong>" = Think Before Coding</span></li>
+            <li><span class="bi"></span><span>"Never touch production config without explicit permission" = Simplicity First</span></li>
+            <li><span class="bi"></span><span><code>@import</code>는 <strong style="color:var(--warn)">아직 안 씀</strong>(grep 결과 없음)</span></li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--muted);padding:10px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
+        도입한다면: "Rules (update when Claude makes mistakes)" 블록이 길어지면 <code>@rules.md</code>로 빼서 CLAUDE.md 본문을 가볍게 유지
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 12 : context:fork (비교 @keyframes) ─────────────── -->
+  <div class="slide" id="s12">
+    <div class="slide-inner">
+      <div class="section-label">§9 context: fork</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,36px)">격리의 <span class="accent">이득</span>과 <span style="color:var(--warn)">중복 로딩</span> 단점</h2>
+      <div class="cols-fork" style="margin-top:18px">
+        <div class="col-card">
+          <h3 style="color:var(--warn);font-size:12px;margin-bottom:10px">fork 없음 (메인 컨텍스트)</h3>
+          <div class="ctx-box main-ctx">
+            <h4 style="color:var(--warn)">컨텍스트 오염 가능</h4>
+            <ul class="bullets sub">
+              <li><span class="bi"></span><span>스킬 실행이 메인 히스토리에 쌓임</span></li>
+              <li><span class="bi"></span><span>대량 Read → 메인 컨텍스트 팽창</span></li>
+            </ul>
+            <span class="ctx-token">+토큰↑</span>
+          </div>
+        </div>
+        <div class="col-card">
+          <h3 style="color:var(--accent2);font-size:12px;margin-bottom:10px">context: fork 설정 시</h3>
+          <div class="ctx-box fork-box">
+            <h4 style="color:var(--accent2)">격리된 서브에이전트</h4>
+            <ul class="bullets sub">
+              <li><span class="bi"></span><span>메인 컨텍스트를 더럽히지 않음</span></li>
+              <li><span class="bi"></span><span>단점: 메인이 읽은 파일을 fork가 <strong style="color:var(--warn)">또 읽어 중복 토큰</strong></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:14px">
+        <strong>실측</strong> — 내 스킬 어디에도 <code>context: fork</code> 없음. 대신 <code>chapter-deck</code>은 "2개 서브에이전트로 병렬 디스패치, 메인 맥락을 물려주지 않는다"로 동일 효과 달성
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 13 : 클로징 — 핵심 개념 ─────────────── -->
+  <div class="slide" id="s13">
+    <div class="slide-inner" style="text-align:center">
+      <div class="slide-tag" style="text-align:center">발표 핵심 개념 · Chapter 03</div>
+      <div class="big-quote" style="margin-bottom:28px">
+        <span class="hl2">"description은</span> <span class="hl">광고문</span>,<br>
+        <span class="hl2">보장은</span> <span class="hl">hook이 한다"</span>
+      </div>
+      <div class="cols" style="text-align:left;margin-top:0">
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">3단계 요약</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--accent)">L1</strong> — name+description만 (전 스킬)</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--accent2)">L2</strong> — 매칭 시 SKILL.md 본문</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--warn)">L3</strong> — 필요 시 리소스 개별</span></li>
+            <li><span class="bi"></span><span>비용 = 개수 ✗, <strong style="color:var(--text)">열어본 횟수</strong> ✔</span></li>
+          </ul>
+        </div>
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">라이브 데모 포인트</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>수십 개 스킬 → description만 뜸 → <code>/study-chapter</code> 호출 시 본문 로딩</span></li>
+            <li><span class="bi"></span><span><code>cbm-code-discovery-gate</code> 훅이 실제로 Read 차단</span></li>
+            <li><span class="bi"></span><span>확률(지침) vs 결정론(hook) 대비</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#deck -->
+
+<script>
+(function() {
+  'use strict';
+
+  var slides = document.querySelectorAll('.slide');
+  var total  = slides.length;
+  var cur    = 0;
+
+  var counter     = document.getElementById('counter');
+  var progressBar = document.getElementById('progress-bar');
+
+  function show(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= total) idx = total - 1;
+
+    slides[cur].classList.remove('active');
+    cur = idx;
+    slides[cur].classList.add('active');
+
+    counter.textContent = (cur + 1) + ' / ' + total;
+
+    var pct = total <= 1 ? 100 : (cur / (total - 1)) * 100;
+    progressBar.style.width = pct + '%';
+  }
+
+  function navigate(dir) {
+    show(cur + dir);
+  }
+
+  /* 키보드 */
+  document.addEventListener('keydown', function(e) {
+    switch (e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown':
+        e.preventDefault(); navigate(1); break;
+      case 'ArrowLeft': case 'PageUp':
+        e.preventDefault(); navigate(-1); break;
+      case 'Home':
+        e.preventDefault(); show(0); break;
+      case 'End':
+        e.preventDefault(); show(total - 1); break;
+    }
+  });
+
+  /* 클릭 내비: click-prev/click-next 은 HTML onclick 처리 */
+  window.navigate = navigate;
+
+  /* 터치 스와이프 */
+  var touchStartX = 0;
+  var touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].screenX - touchStartX;
+    var dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      navigate(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  /* 초기화 */
+  show(0);
+})();
+</script>
+</body>
+</html>
