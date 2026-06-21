@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video to Storyboard"
+  short_description: "Turn video into a scene-by-scene storyboard."
+  default_prompt: "Use $youtube-to-storyboard to turn this video into a scene-based storyboard."
