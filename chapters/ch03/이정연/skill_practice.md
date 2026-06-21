@@ -130,11 +130,11 @@ urdf-to-mjcf/
 
 ### 변환한 MJCF를 MuJoCo로 띄운 화면
 
-대표적으로 변환한 손을 MuJoCo 렌더러로 띄워 확인한 스크린샷이다(변환 → 로드 → 렌더가 실제로 된다는 증거).
+대표적으로 변환한 손을 MuJoCo 렌더러로 띄워 확인한 스크린샷이다(변환 → 로드 → 렌더가 실제로 된다는 증거). collision geom이 아니라 **visual 메시(contype==0)만** 골라 렌더했다.
 
-| Allegro Hand (대표, bodies=17) | Shadow Hand (메시 풍부, bodies=25) |
+| Allegro Hand v5.3 (대표, bodies=10) | Shadow Hand (메시 풍부, bodies=25) |
 |---|---|
-| ![allegro hand mjcf](mjcf_allegro_hand.png) | ![shadow hand mjcf](mjcf_shadow_hand.png) |
+| ![allegro hand v5 mjcf](mjcf_allegro_hand_v5.png) | ![shadow hand mjcf](mjcf_shadow_hand.png) |
 
 ### 스킬로 만들어 진행해서 얻은 이점 (이번 장 핵심 회고)
 
