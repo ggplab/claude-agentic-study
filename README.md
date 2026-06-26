@@ -28,10 +28,13 @@
 1. **참여자**: 모임 전까지 그 챕터의 `chapters/chNN/README.md`에 **기본글**(고른 개념 / 리마인드 / 의미)을 쓰고, **LinkedIn에 포스팅**한다. → Claude Code에서 `/study-chapter <챕터번호>`에 읽기 메모를 붙여넣으면 개념정리 + 본인 클로드 시스템 적용예시 실측 + 기본글 + LinkedIn 초안까지 만들어 정리본만 푸시해준다. 원본 메모·초안은 `_drafts/`(gitignore)에 로컬로만 남는다. (스킬: [`.claude/skills/study-chapter`](.claude/skills/study-chapter/SKILL.md))
 2. **리더**: **일요일 오후**에 참여자들이 올린 글을 보고 **발표 순서를 조정**한다. → Claude Code에서 `/order-session <챕터번호>` 실행하면 자동으로 글을 읽어 중복 점검 + 순서 제안 + README 기록까지 해준다. (스킬: [`.claude/skills/order-session`](.claude/skills/order-session/SKILL.md))
 
+> 🤖 **자동화**: 발표 순서 조정은 **매주 일요일 21:00(스터디 30분 전)** 클라우드 스케줄 에이전트가 자동으로 한 번 돌립니다. 진행중 챕터를 찾아 `/order-session` 절차를 수행하고 발표 순서 섹션을 갱신해 커밋·push 합니다(참여자 본문은 건드리지 않음). 즉, 모임 전이면 챕터 README에 발표 순서가 이미 올라와 있습니다. 리더가 직접 다시 돌려 덮어써도 됩니다. (운영: 임정)
+
 ```
 [참여자] 기본글 작성 + LinkedIn 포스팅
             ↓ (일요일 오후)
 [리더] /order-session 으로 순서 조정
+   (+ 일 21:00 클라우드 에이전트가 자동 1회 실행)
             ↓
 [모임 60분] 리드 요약 → 각자 발표 → 회고/커밋
 ```

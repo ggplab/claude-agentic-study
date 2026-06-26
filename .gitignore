@@ -22,6 +22,10 @@ node_modules/
 # 개인 작업 파일 (원본 메모·포스팅 초안) — 정리본만 커밋
 _drafts/
 
+# 개인 전용 Claude 설정·훅 (지지플랩 디자인시스템 등 — 공유 안 함)
+.claude/settings.local.json
+.claude/hooks/
+
 # Pages 사이트 빌드 산출물 (markdown/html이 원천 — 빌드 시 재생성, 커밋 제외)
 site/dist/
 site/src/generated/
