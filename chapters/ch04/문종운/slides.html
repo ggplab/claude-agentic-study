@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CH04 — 서브에이전트</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --accent:    #58a6ff;
+    --accent2:   #3fb950;
+    --warn:      #f0883e;
+    --muted:     #8b949e;
+    --text:      #e6edf3;
+    --text-sub:  #b1bac4;
+    --code-bg:   #1c2128;
+    --chip-bg:   #1f3a5f;
+    --chip-text: #79c0ff;
+    --font-sys:  -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+                 Arial, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas,
+                 "Courier New", monospace;
+    --radius:    8px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sys);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* 진행률 바 */
+  #progress-bar-wrap {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 3px; background: var(--border); z-index: 100;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.35s ease; width: 0%;
+  }
+
+  /* 슬라이드 */
+  #deck { position: relative; width: 100%; height: 100%; }
+  .slide {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; justify-content: center; align-items: center;
+    padding: 48px 64px; opacity: 0; transition: opacity 0.3s ease;
+  }
+  .slide.active { display: flex; opacity: 1; }
+
+  /* 클릭 내비 */
+  #click-prev { position: fixed; top: 0; left: 0; width: 40%; height: 100%; z-index: 10; cursor: w-resize; }
+  #click-next { position: fixed; top: 0; right: 0; width: 60%; height: 100%; z-index: 10; cursor: e-resize; }
+
+  #counter {
+    position: fixed; bottom: 20px; right: 28px; font-size: 13px;
+    color: var(--muted); z-index: 50; font-variant-numeric: tabular-nums; letter-spacing: 0.03em;
+  }
+  #key-hint {
+    position: fixed; bottom: 20px; left: 28px; font-size: 11px;
+    color: var(--border); z-index: 50; letter-spacing: 0.03em;
+  }
+
+  .slide-inner { width: 100%; max-width: 920px; position: relative; z-index: 20; }
+
+  /* 타이포 */
+  .slide-tag {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px; opacity: 0.85;
+  }
+  .slide-title {
+    font-size: clamp(28px, 4vw, 52px); font-weight: 700; line-height: 1.15;
+    letter-spacing: -0.02em; color: var(--text); margin-bottom: 10px;
+  }
+  .slide-title .accent { color: var(--accent); }
+  .slide-title .accent2 { color: var(--accent2); }
+  .slide-subtitle {
+    font-size: clamp(14px, 2vw, 20px); color: var(--text-sub);
+    margin-bottom: 32px; font-weight: 400; line-height: 1.5;
+  }
+  .slide-lead {
+    font-size: 13px; color: var(--muted); margin-top: 36px;
+    border-top: 1px solid var(--border); padding-top: 16px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .slide-lead span { display: flex; align-items: center; gap: 6px; }
+  .slide-lead .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); display: inline-block; flex-shrink: 0; }
+
+  /* 불릿 */
+  .bullets { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .bullets li {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: clamp(14px, 1.8vw, 18px); line-height: 1.6; color: var(--text-sub);
+  }
+  .bullets li .bi { flex-shrink: 0; margin-top: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .bullets li strong, .bullets li b { color: var(--text); font-weight: 600; }
+  .bullets.sub li .bi { background: var(--muted); width: 5px; height: 5px; margin-top: 6px; }
+  .bullets.sub li { font-size: clamp(13px, 1.5vw, 16px); color: var(--muted); }
+
+  /* code / chip */
+  code, .chip {
+    font-family: var(--font-mono); font-size: 0.82em; background: var(--chip-bg); color: var(--chip-text);
+    border: 1px solid rgba(88,166,255,0.2); border-radius: 4px; padding: 1px 7px; white-space: nowrap;
+  }
+
+  /* 섹션 라벨 */
+  .section-label {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 4px; padding: 2px 10px; margin-bottom: 18px;
+  }
+  .section-label.warn { background: rgba(240,136,62,0.12); color: var(--warn); border-color: rgba(240,136,62,0.3); }
+
+  /* footnote */
+  .footnote {
+    margin-top: 22px; padding: 10px 16px; border-left: 3px solid var(--warn);
+    background: rgba(240,136,62,0.07); border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13px; color: var(--warn); line-height: 1.55;
+  }
+  .footnote strong { color: var(--warn); }
+  .footnote.green { border-left-color: var(--accent2); background: rgba(63,185,80,0.07); color: var(--accent2); }
+  .footnote.green strong { color: var(--accent2); }
+
+  /* 2열 그리드 */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; }
+  .col-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+  .col-card h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* 계층 행 */
+  .hierarchy { display: flex; flex-direction: column; gap: 10px; }
+  .hier-row {
+    display: flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px;
+  }
+  .hier-num { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--accent); width: 30px; flex-shrink: 0; text-align: center; }
+  .hier-content { flex: 1; }
+  .hier-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .hier-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .hier-badge {
+    font-size: 11px; font-weight: 700; color: var(--warn); background: rgba(240,136,62,0.12);
+    border: 1px solid rgba(240,136,62,0.25); border-radius: 4px; padding: 2px 8px; white-space: nowrap;
+  }
+  .hier-badge.green { color: var(--accent2); background: rgba(63,185,80,0.1); border-color: rgba(63,185,80,0.25); }
+  .hier-badge.blue { color: var(--accent); background: rgba(88,166,255,0.1); border-color: rgba(88,166,255,0.25); }
+
+  /* 테이블 */
+  .table-wrap { width: 100%; overflow-y: auto; max-height: 60vh; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 1.2vw, 13px); }
+  thead th {
+    background: var(--surface); color: var(--accent); font-weight: 700; padding: 10px 14px; text-align: left;
+    border-bottom: 2px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 5;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.018); }
+  tbody td { padding: 9px 14px; color: var(--text-sub); vertical-align: top; line-height: 1.5; }
+  tbody td:first-child { font-family: var(--font-mono); color: var(--chip-text); white-space: nowrap; font-size: 0.9em; }
+  tbody td .highlight { color: var(--text); font-weight: 600; }
+
+  /* 흐름 다이어그램 */
+  .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; justify-content: center; margin: 18px 0; }
+  .flow-node {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 18px;
+    font-size: clamp(12px, 1.4vw, 15px); font-weight: 600; color: var(--text); text-align: center; min-width: 96px;
+  }
+  .flow-node.hl { border-color: var(--accent); color: var(--accent); }
+  .flow-node.hl2 { border-color: var(--accent2); color: var(--accent2); }
+  .flow-arrow { font-size: 20px; color: var(--muted); padding: 0 6px; }
+
+  /* 오케스트레이터 도식 */
+  .orch { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 8px; }
+  .orch-main {
+    background: rgba(88,166,255,0.08); border: 1px solid var(--accent); color: var(--accent);
+    border-radius: var(--radius); padding: 14px 26px; font-weight: 700; font-size: 15px;
+  }
+  .orch-split { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .orch-worker {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 16px; font-size: 13px; color: var(--text-sub); min-width: 120px; text-align: center;
+  }
+  .orch-label { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+
+  /* 큰 인용 */
+  .big-quote {
+    font-size: clamp(22px, 3.4vw, 42px); font-weight: 700; color: var(--text);
+    line-height: 1.32; letter-spacing: -0.015em; text-align: center;
+  }
+  .big-quote .hl { color: var(--accent2); }
+  .big-quote .hl2 { color: var(--accent); }
+
+  /* 배경 글로우 */
+  .bg-glow { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.04; pointer-events: none; z-index: 0; }
+  .bg-glow-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; right: -200px; }
+  .bg-glow-2 { width: 500px; height: 500px; background: var(--accent2); bottom: -200px; left: -150px; }
+
+  @media (max-width: 768px) {
+    .slide { padding: 36px 28px; }
+    .cols { grid-template-columns: 1fr; gap: 14px; }
+    #counter { bottom: 14px; right: 16px; }
+    .flow-node { min-width: 76px; padding: 10px 12px; }
+  }
+  @media (max-width: 480px) { .slide { padding: 24px 18px; } }
+</style>
+</head>
+<body>
+
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+<div id="click-prev" onclick="navigate(-1)"></div>
+<div id="click-next" onclick="navigate(1)"></div>
+<div id="counter">1 / 13</div>
+<div id="key-hint">← → Space · 좌/우 클릭</div>
+
+<div id="deck">
+
+  <!-- 1 : 타이틀 -->
+  <div class="slide active" id="s1">
+    <div class="slide-inner">
+      <div class="slide-tag">Claude Code Agentic Study · 2026</div>
+      <h1 class="slide-title">CHAPTER 04<br><span class="accent">서브에이전트</span></h1>
+      <p class="slide-subtitle">서브는 격리된 워커, 메인은 오케스트레이터 — 일은 딱 둘, 분배와 통합</p>
+      <div class="slide-lead">
+        <span><span class="dot"></span>발표: 문종운</span>
+        <span><span class="dot" style="background:var(--accent)"></span>총 13 슬라이드</span>
+        <span><span class="dot" style="background:var(--muted)"></span>§1–§12 커버</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 : Agenda -->
+  <div class="slide" id="s2">
+    <div class="slide-inner">
+      <div class="section-label">Agenda</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,36px)">오늘 다룰 <span class="accent">흐름</span></h2>
+      <div class="hierarchy" style="margin-top:20px">
+        <div class="hier-row">
+          <div class="hier-num">①</div>
+          <div class="hier-content"><div class="hier-title">격리 · 오케스트레이터-워커</div><div class="hier-desc">왜 서브에이전트인가 — 컨텍스트 격리와 분배·통합</div></div>
+        </div>
+        <div class="hier-row" style="border-color:var(--accent)">
+          <div class="hier-num" style="color:var(--warn)">★</div>
+          <div class="hier-content"><div class="hier-title" style="color:var(--warn)">단일 책임 · 분리 기준 3가지 · 파이프라인</div><div class="hier-desc">운영 관점 — 무엇을 떼어내 어디에 맡기나</div></div>
+          <div class="hier-badge">핵심</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">②</div>
+          <div class="hier-content"><div class="hier-title">호출 · resume · 프론트매터 · 훅 · 메모리</div><div class="hier-desc">서브를 다루는 실전 메커니즘</div></div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">③</div>
+          <div class="hier-content"><div class="hier-title">에이전트 팀</div><div class="hier-desc">통신 · 공유 태스크 · 파일 lock (실험적)</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 : 컨텍스트 격리 -->
+  <div class="slide" id="s3">
+    <div class="slide-inner">
+      <div class="section-label">§1 서브에이전트란</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">핵심 가치는 <span class="accent">컨텍스트 격리</span></h2>
+      <div class="cols" style="margin-top:20px">
+        <div class="col-card" style="border-color:var(--warn)">
+          <h3 style="color:var(--warn)">격리 없이 직접</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>곁가지 작업이 메인 대화에 쌓임</span></li>
+            <li><span class="bi"></span><span>대량 읽기 → 메인 컨텍스트 팽창·오염</span></li>
+          </ul>
+        </div>
+        <div class="col-card" style="border-color:var(--accent2)">
+          <h3 style="color:var(--accent2)">서브에이전트로 격리</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>격리 환경에서 돌아 <strong style="color:var(--text)">충돌↓</strong></span></li>
+            <li><span class="bi"></span><span>메인엔 <strong style="color:var(--text)">정제된 결과만</strong> 반환</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote green" style="margin-top:18px">
+        <strong>실측</strong> — 탐색 에이전트 <code>ux-reviewer</code>·<code>claude-doctor</code>는 read-only(<code>Read,Glob,Grep</code>)로 정의. 대량 스캔을 맡겨도 덤프가 메인에 안 쌓이고 "발견 항목"만 돌아온다
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 : 오케스트레이터-워커 -->
+  <div class="slide" id="s4">
+    <div class="slide-inner">
+      <div class="section-label">§2 오케스트레이터-워커</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">메인의 일은 <span class="accent">분배</span> + <span class="accent2">통합</span></h2>
+      <div class="orch" style="margin-top:18px">
+        <div class="orch-main">메인 = 오케스트레이터 (분배 · 통합)</div>
+        <div class="orch-label">▼ 분배 ▼</div>
+        <div class="orch-split">
+          <div class="orch-worker">워커 A</div>
+          <div class="orch-worker">워커 B</div>
+          <div class="orch-worker">워커 C</div>
+        </div>
+        <div class="orch-label">▲ 정제된 결과 통합 ▲</div>
+      </div>
+      <div class="footnote green" style="margin-top:16px">
+        <strong>실측</strong> — <code>/team</code> 하네스가 이 패턴. Plan→Design→Implement→Review→Complete를 전담 에이전트에 분배하고, <code>.team/*.md</code> 산출물을 메인이 통합. 메인은 코드를 직접 짜지 않는다
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 : 단일 책임 -->
+  <div class="slide" id="s5">
+    <div class="slide-inner">
+      <div class="section-label warn">§3 ★ 단일 책임 원칙</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)">1 에이전트 = <span class="accent2">1 책임</span></h2>
+      <p class="slide-subtitle" style="margin-top:10px;margin-bottom:18px">한 에이전트가 계획·구현·테스트를 다 하면 프롬프트가 비대해지고 품질이 떨어진다</p>
+      <div class="flow">
+        <div class="flow-node">product-owner<br><span style="font-size:11px;color:var(--muted)">PRD</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">architect<br><span style="font-size:11px;color:var(--muted)">설계</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hl2">developer<br><span style="font-size:11px;color:var(--muted)">구현</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">qa-manager<br><span style="font-size:11px;color:var(--muted)">검증</span></div>
+      </div>
+      <div class="footnote" style="margin-top:14px">
+        <strong>실측</strong> — <code>developer.md</code> 본문이 책임을 못박는다: "설계서에 없는 기능 추가, 최적화, 리팩토링 <strong>금지</strong>". 그래서 각 시스템 프롬프트가 짧고 명확
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 : 방향 vs 판단 -->
+  <div class="slide" id="s6">
+    <div class="slide-inner">
+      <div class="section-label">§4 지침의 균형</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><span class="accent">방향</span>은 주되 <span class="accent2">판단 여지</span>는 남긴다</h2>
+      <ul class="bullets" style="margin-top:20px">
+        <li><span class="bi"></span><span><strong>방향을 줄 만큼 구체적</strong>이되, 판단력을 발휘할 여지를 남기는 지침</span></li>
+        <li><span class="bi"></span><span>서브에 주는 <strong>초기 컨텍스트</strong>의 양, 서브가 <strong>수집한 컨텍스트</strong>의 관리가 결과를 좌우</span></li>
+      </ul>
+      <div class="footnote green" style="margin-top:18px">
+        <strong>실측</strong> — <code>developer.md</code>: "설계 가정과 현실이 다르면 명시적으로 보고(임의 변경 금지)". 방향=설계서(위), 판단=불일치 보고(에이전트). 판단 비중 큰 일은 opus(<code>architect</code>·<code>zero-trust-advisor</code>), 절차 실행은 sonnet(<code>developer</code>)
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 : 파이프라인 -->
+  <div class="slide" id="s7">
+    <div class="slide-inner">
+      <div class="section-label">§5 파이프라인</div>
+      <h2 class="slide-title" style="font-size:clamp(22px,2.8vw,38px)"><span class="accent">순차</span> 체이닝 · <span class="accent2">병렬</span> 팬아웃</h2>
+      <div class="cols" style="margin-top:20px">
+        <div class="col-card">
+          <h3>순차 (의존성 있음)</h3>
+          <div class="flow" style="margin:6px 0">
+            <div class="flow-node" style="min-width:60px;padding:8px 10px;font-size:12px">plan</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node" style="min-width:60px;padding:8px 10px;font-size:12px">design</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node" style="min-width:60px;padding:8px 10px;font-size:12px">build</div>
+          </div>
+        </div>
+        <div class="col-card">
+          <h3 style="color:var(--accent2)">병렬 (독립)</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>여러 탐색 에이전트 동시 디스패치</span></li>
+            <li><span class="bi"></span><span>조사·수집 병렬화 → <strong style="color:var(--text)">전체 시간 단축</strong></span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote green" style="margin-top:16px">
+        <strong>실측</strong> — <code>chapter-deck</code>이 2개 서브에이전트를 병렬 디스패치(메인 맥락 미상속)해 슬라이드를 만들었다. 독립적인 일은 한 메시지에서 동시에 띄우는 게 원칙
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 : 분리 기준 3가지 -->
+  <div class="slide" id="s8">
+    <div class="slide-inner">
+      <div class="section-label warn">§6 ★ 분리 기준 3가지</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">언제 서브에이전트로 <span class="accent">떼어내나</span></h2>
+      <div class="hierarchy" style="margin-top:18px">
+        <div class="hier-row">
+          <div class="hier-num">1</div>
+          <div class="hier-content"><div class="hier-title">작업 복잡도</div><div class="hier-desc">멀티스텝으로 복잡 → 위임 (예: <code>/team</code> 파이프라인)</div></div>
+          <div class="hier-badge blue">복잡도</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">2</div>
+          <div class="hier-content"><div class="hier-title">컨텍스트 소모량</div><div class="hier-desc">대규모 파일 읽기 → 위임 (예: <code>Explore</code>로 README 수십 개 조사)</div></div>
+          <div class="hier-badge blue">소모량</div>
+        </div>
+        <div class="hier-row">
+          <div class="hier-num">3</div>
+          <div class="hier-content"><div class="hier-title">전문성 요구</div><div class="hier-desc">특정 도메인 전문성 → 위임 (예: 보안은 <code>zero-trust-advisor</code>)</div></div>
+          <div class="hier-badge blue">전문성</div>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        <strong>공통 목적</strong> — 셋 다 결국 <strong>메인 컨텍스트를 오염시키지 않기</strong>. 반대로 한 줄 질문·잡일엔 하네스를 끼우지 않는다(분리 비용 &gt; 이득)
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 : 호출 + resume -->
+  <div class="slide" id="s9">
+    <div class="slide-inner">
+      <div class="section-label">§7·§8 호출 · 재개</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">자연어로 부르고, <span class="accent">agentId</span>로 잇는다</h2>
+      <div class="cols" style="margin-top:18px">
+        <div class="col-card">
+          <h3>호출</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>자연어로 부르면 <code>description</code> 보고 <strong style="color:var(--text)">자동 위임</strong></span></li>
+            <li><span class="bi"></span><span>이름을 <strong style="color:var(--text)">명시</strong>하면 더 정확히 지목</span></li>
+          </ul>
+        </div>
+        <div class="col-card" style="border-color:var(--accent)">
+          <h3>재개 (resume)</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span>서브는 <strong style="color:var(--warn)">새 인스턴스</strong> → 이전 결과 모름</span></li>
+            <li><span class="bi"></span><span><code>agentId</code> 회수 → resume으로 맥락 유지</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        <strong>정정</strong> — 메모의 <code>@&lt;이름&gt;(agent)</code>에서 <code>(agent)</code>는 실제 문법 아님. 이 하네스에선 <code>Agent</code>로 새로 띄우고, <code>SendMessage</code>에 id/이름을 줘야 맥락 유지 재개
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 : 프론트매터 -->
+  <div class="slide" id="s10">
+    <div class="slide-inner">
+      <div class="section-label">§9 프론트매터</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)"><code style="font-size:0.6em">tools</code>·<code style="font-size:0.6em">skills</code>로 능력 정의 — 단, 토큰</h2>
+      <div class="table-wrap" style="max-height:34vh;margin-top:14px">
+        <table>
+          <thead><tr><th>필드</th><th>역할 / 주의</th></tr></thead>
+          <tbody>
+            <tr><td>tools</td><td>그 에이전트가 쓸 도구 허용 목록 (능력의 명시적 제약)</td></tr>
+            <tr><td>skills</td><td class="highlight">스킬 프리로드 → 절차 주입. 단 <strong>컨텍스트 급증</strong> → 토큰 효율 따질 것</td></tr>
+            <tr><td>model</td><td>티어 라우팅 (판단=opus / 실행=sonnet / 탐색=haiku)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote green" style="margin-top:14px">
+        <strong>실측</strong> — <code>developer.md</code>: <code>model: sonnet</code> + <code>tools: Read,Write,Edit,Glob,Grep,Bash</code>(9개 중 유일한 쓰기 권한). 일관된 방법론은 <code>CLAUDE.md</code> 티어 규칙·품질 게이트로 통일 → 어느 에이전트든 같은 기준
+      </div>
+    </div>
+  </div>
+
+  <!-- 11 : 훅 + 메모리 -->
+  <div class="slide" id="s11">
+    <div class="slide-inner">
+      <div class="section-label">§10·§11 훅 · 메모리</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">훅 <span class="accent">3종</span> + 부모측 <span class="accent2">SubagentStop</span></h2>
+      <div class="flow" style="margin-top:14px">
+        <div class="flow-node hl">PreToolUse<br><span style="font-size:11px;color:var(--muted)">도구 실행 전</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">PostToolUse<br><span style="font-size:11px;color:var(--muted)">도구 실행 후</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">Stop<br><span style="font-size:11px;color:var(--muted)">실행 종료</span></div>
+      </div>
+      <div class="footnote" style="margin-top:14px">
+        <strong>실측(산 증거)</strong> — 이 정리본을 쓰며 <code>_TEMPLATE.md</code>를 Read하자 <code>PreToolUse</code> 훅 <code>cbm-code-discovery-gate</code>가 실제로 호출을 <strong>차단</strong>했다. 확률적 지침이 아니라 코드가 결정론적으로 막는 게 훅
+      </div>
+      <div class="footnote green" style="margin-top:10px">
+        <strong>메모리</strong> — 실패 시 원인 로그·모니터링으로 재발 방지. <code>/team</code>은 <code>.team/</code>(prd·design·code-map)을 공유 메모리로 써 새 인스턴스가 직전 맥락을 복원
+      </div>
+    </div>
+  </div>
+
+  <!-- 12 : 에이전트 팀 -->
+  <div class="slide" id="s12">
+    <div class="slide-inner">
+      <div class="section-label warn">§12 에이전트 팀 (실험적)</div>
+      <h2 class="slide-title" style="font-size:clamp(20px,2.5vw,36px)">팀원끼리 <span class="accent">통신</span>, lock으로 <span class="accent2">race 차단</span></h2>
+      <div class="cols" style="margin-top:18px">
+        <div class="col-card">
+          <h3>통신</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><code>config.json</code>에 agent-id <strong style="color:var(--text)">배열</strong></span></li>
+            <li><span class="bi"></span><span>이 파일을 보고 브로드캐스트 / 단일 메시지</span></li>
+          </ul>
+        </div>
+        <div class="col-card" style="border-color:var(--accent2)">
+          <h3 style="color:var(--accent2)">공유 태스크</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><code>tasks</code> 디렉토리의 작업을 수행</span></li>
+            <li><span class="bi"></span><span>파일 <strong style="color:var(--text)">lock 선점</strong> → 한 에이전트만 → race condition 차단</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footnote" style="margin-top:16px">
+        <strong>대비</strong> — 서브에이전트: 메인이 결과 받아 오케스트레이션 / 에이전트 팀: 팀원이 직접 소통. 실측 analog는 <code>/team sprint·work #N·integrate</code>(멀티세션 병렬). 무거우니 기본은 서브에이전트
+      </div>
+    </div>
+  </div>
+
+  <!-- 13 : 클로징 -->
+  <div class="slide" id="s13">
+    <div class="slide-inner" style="text-align:center">
+      <div class="slide-tag" style="text-align:center">발표 핵심 개념 · Chapter 04</div>
+      <div class="big-quote" style="margin-bottom:28px">
+        <span class="hl2">서브는 격리된 워커,</span><br>
+        <span class="hl2">메인은 오케스트레이터 —</span><br>
+        일은 딱 둘, <span class="hl">분배</span>와 <span class="hl">통합</span>
+      </div>
+      <div class="cols" style="text-align:left;margin-top:0">
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">한 축에서 파생되는 것</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><strong style="color:var(--text)">단일 책임</strong> — 워커 1명 1책임</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">분리 기준 3가지</strong> — 복잡도·소모량·전문성</span></li>
+            <li><span class="bi"></span><span><strong style="color:var(--text)">파이프라인</strong> — 순차·병렬</span></li>
+          </ul>
+        </div>
+        <div class="col-card">
+          <h3 style="font-size:13px;margin-bottom:10px">내 작업에 닿는 곳</h3>
+          <ul class="bullets sub">
+            <li><span class="bi"></span><span><code>/team</code> 전체가 이 한 문장의 구현</span></li>
+            <li><span class="bi"></span><span>메인은 분배·통합만, 워커는 격리</span></li>
+            <li><span class="bi"></span><span>분업이 무너지면 프롬프트 비대·컨텍스트 오염</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#deck -->
+
+<script>
+(function() {
+  'use strict';
+  var slides = document.querySelectorAll('.slide');
+  var total  = slides.length;
+  var cur    = 0;
+  var counter     = document.getElementById('counter');
+  var progressBar = document.getElementById('progress-bar');
+
+  function show(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= total) idx = total - 1;
+    slides[cur].classList.remove('active');
+    cur = idx;
+    slides[cur].classList.add('active');
+    counter.textContent = (cur + 1) + ' / ' + total;
+    var pct = total <= 1 ? 100 : (cur / (total - 1)) * 100;
+    progressBar.style.width = pct + '%';
+  }
+  function navigate(dir) { show(cur + dir); }
+
+  document.addEventListener('keydown', function(e) {
+    switch (e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); navigate(1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); navigate(-1); break;
+      case 'Home': e.preventDefault(); show(0); break;
+      case 'End': e.preventDefault(); show(total - 1); break;
+    }
+  });
+  window.navigate = navigate;
+
+  var touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].screenX - touchStartX;
+    var dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) navigate(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
