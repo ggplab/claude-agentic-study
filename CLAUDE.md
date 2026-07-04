@@ -18,6 +18,13 @@
 - 다른 참여자의 README 섹션은 수정·삭제 금지(본인 섹션만 채움).
 - 응답은 한국어.
 
+## 개인 정리본 스타일 (모임에서 함께 보는 화면)
+
+`chapters/chNN/<이름>/README.md`는 여러 명이 같은 화면을 보며 이야기하는 발표 자료다.
+
+- **개조식으로 작성**: 불릿·표·짧은 항목 중심. 문단형 산문 금지.
+- **핵심 내용은 artifact로 시각화**: standalone HTML 도식을 같은 폴더에 두고(Pages 인앱 뷰용), GitHub README에서 바로 보이도록 **PNG로 렌더해 임베드**한다(`![...](xxx.png)` + HTML 원본 링크).
+
 ## Pages 사이트 (대시보드)
 
 스터디 아카이브를 한눈에 보는 React 대시보드. 소스는 저장소 markdown(README들)이며 **작성자가 README를 작성·push 하면 GitHub Actions가 자동 재빌드·배포**한다.
