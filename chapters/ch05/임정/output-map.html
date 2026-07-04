@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>임정의 출력 인터페이스 지도</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #1f2937;
+    --sub: #5b6472;
+    --line: #e5e8ee;
+    --doc-bg: #dbeafe; --doc-ink: #1d4ed8; --doc-line: #bfd7fb;
+    --vis-bg: #d1fae5; --vis-ink: #0f766e; --vis-line: #a7e8cf;
+    --sys-bg: #ede9fe; --sys-ink: #6d28d9; --sys-line: #ddd3fb;
+    --chip-bg: #f3f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --ink: #e8ebf1; --sub: #9aa3b2; --line: #2a2f3a;
+      --doc-bg: #1c2a45; --doc-ink: #8ab4ff; --doc-line: #2c4570;
+      --vis-bg: #14332c; --vis-ink: #5fd4bd; --vis-line: #1f5347;
+      --sys-bg: #2a2245; --sys-ink: #c3aaff; --sys-line: #443670;
+      --chip-bg: #1e232d;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --ink: #1f2937; --sub: #5b6472; --line: #e5e8ee;
+    --doc-bg: #dbeafe; --doc-ink: #1d4ed8; --doc-line: #bfd7fb;
+    --vis-bg: #d1fae5; --vis-ink: #0f766e; --vis-line: #a7e8cf;
+    --sys-bg: #ede9fe; --sys-ink: #6d28d9; --sys-line: #ddd3fb;
+    --chip-bg: #f3f5f9;
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171d; --ink: #e8ebf1; --sub: #9aa3b2; --line: #2a2f3a;
+    --doc-bg: #1c2a45; --doc-ink: #8ab4ff; --doc-line: #2c4570;
+    --vis-bg: #14332c; --vis-ink: #5fd4bd; --vis-line: #1f5347;
+    --sys-bg: #2a2245; --sys-ink: #c3aaff; --sys-line: #443670;
+    --chip-bg: #1e232d;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: Pretendard, "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.5; padding: 40px 24px 56px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--sub); text-transform: uppercase; }
+  h1 { font-size: 26px; font-weight: 800; margin-top: 6px; text-wrap: balance; }
+  .thesis { margin-top: 6px; color: var(--sub); font-size: 14.5px; }
+  .thesis strong { color: var(--ink); }
+  .axis {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin: 22px 0 10px; font-size: 12px; color: var(--sub);
+  }
+  .axis .step { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+  .axis .sep { opacity: .55; }
+  .layer { margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 18px; }
+  .layer-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; margin-bottom: 12px; }
+  .layer-name { font-size: 15px; font-weight: 800; }
+  .layer-desc { font-size: 12.5px; color: var(--sub); }
+  .flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .arrow { align-self: center; color: var(--sub); font-size: 16px; }
+  .card {
+    flex: 1 1 150px; min-width: 150px; border-radius: 10px;
+    padding: 10px 12px 11px; border: 1px solid;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .doc .card { background: var(--doc-bg); border-color: var(--doc-line); }
+  .doc .fmt, .doc .layer-name { color: var(--doc-ink); }
+  .vis .card { background: var(--vis-bg); border-color: var(--vis-line); }
+  .vis .fmt, .vis .layer-name { color: var(--vis-ink); }
+  .sys .card { background: var(--sys-bg); border-color: var(--sys-line); }
+  .sys .fmt, .sys .layer-name { color: var(--sys-ink); }
+  .card.found { border-style: dashed; background: var(--bg); }
+  .fmt { font-size: 14px; font-weight: 800; display: flex; gap: 6px; align-items: baseline; }
+  .count { font-size: 11px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .when { font-size: 12px; color: var(--ink); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { font-size: 10.5px; background: var(--chip-bg); color: var(--sub); border-radius: 5px; padding: 2px 6px; }
+  .rule { font-size: 11px; color: var(--sub); margin-top: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; font-size: 12px; color: var(--sub); align-items: center; }
+  .key { display: inline-block; width: 22px; height: 12px; border-radius: 4px; border: 1px solid var(--line); vertical-align: -1px; margin-right: 5px; }
+  .key.solid { background: var(--chip-bg); }
+  .key.dash { border-style: dashed; }
+  .foot { margin-top: 8px; font-size: 11.5px; color: var(--sub); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">CH05 · 출력과 인터페이스 · 2026-07-04</p>
+  <h1>임정의 출력 인터페이스 지도</h1>
+  <p class="thesis">스스로 인식하던 산출물은 5종(md·docx·pdf·html·artifact). 최근 6개월 실측과 스킬 인벤토리를 교차하니 <strong>3계층 15채널</strong>이었다.</p>
+
+  <div class="axis" aria-label="목적 축">
+    <span class="step">보관·기록</span><span class="sep">→</span>
+    <span class="step">편집·협업</span><span class="sep">→</span>
+    <span class="step">공유·배포</span><span class="sep">·</span>
+    <span class="step">로컬 검토</span><span class="sep">→</span>
+    <span class="step">즉시 공유</span><span class="sep">→</span>
+    <span class="step">수업·전달</span>
+  </div>
+
+  <section class="layer doc">
+    <div class="layer-head">
+      <span class="layer-name">L1 문서 파이프라인</span>
+      <span class="layer-desc">md가 원천(SSOT), 편집을 거쳐 배포본으로 흐른다</span>
+    </div>
+    <div class="flow">
+      <div class="card">
+        <span class="fmt">md <span class="count">handoff 97건 샘플</span></span>
+        <span class="when">결과 저장 · 세션 handoff · 리서치</span>
+        <span class="chips"><span class="chip">technical-writer</span><span class="chip">session-wrap</span><span class="chip">research</span></span>
+        <span class="rule">writing-style 점검(em dash·번역투)</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card">
+        <span class="fmt">docx <span class="count">67건</span></span>
+        <span class="when">원고 · 계약 · 제안서</span>
+        <span class="chips"><span class="chip">docx</span><span class="chip">meeting-agenda-docx</span></span>
+        <span class="rule">ggplab.js 템플릿 · 표는 gdocs 경유</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card">
+        <span class="fmt">Google Docs</span>
+        <span class="when">협업 편집 원본 · 표 포맷팅</span>
+        <span class="chips"><span class="chip">publish-gdocs</span></span>
+        <span class="rule">표 포함 docx의 강제 경유지</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card">
+        <span class="fmt">pdf <span class="count">187건</span></span>
+        <span class="when">교안 · 견적서 · 공유본</span>
+        <span class="chips"><span class="chip">pdf</span><span class="chip">markdown-to-pdf</span><span class="chip">lecture-slides</span></span>
+        <span class="rule">BuildnWrite만 노출 · © 푸터</span>
+      </div>
+      <div class="card found">
+        <span class="fmt">xlsx <span class="count">36건</span></span>
+        <span class="when">채점표 · 데이터 정리</span>
+        <span class="chips"><span class="chip">xlsx</span></span>
+        <span class="rule">브랜드·토큰 규칙 미비(개선 2번)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="layer vis">
+    <div class="layer-head">
+      <span class="layer-name">L2 시각 파이프라인</span>
+      <span class="layer-desc">로컬 검토에서 즉시 공유, 수업 배포로 무게가 올라간다</span>
+    </div>
+    <div class="flow">
+      <div class="card">
+        <span class="fmt">html <span class="count">219건</span></span>
+        <span class="when">도식 · 대시보드 · 프로토타입(localhost)</span>
+        <span class="chips"><span class="chip">flow-map</span><span class="chip">infra-inventory</span><span class="chip">dataviz</span></span>
+        <span class="rule">1산출물 1다이어그램</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card">
+        <span class="fmt">artifact</span>
+        <span class="when">즉시 공유용 한눈 도식(claude.ai)</span>
+        <span class="chips"><span class="chip">artifact-design</span><span class="chip">theme-factory</span></span>
+        <span class="rule">html과의 경계 명문화 필요(개선 4번)</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card found">
+        <span class="fmt">pptx <span class="count">48건</span></span>
+        <span class="when">강의 슬라이드</span>
+        <span class="chips"><span class="chip">pptx</span><span class="chip">pptx-finalize</span></span>
+        <span class="rule">인식 밖 주력 포맷(교육업)</span>
+      </div>
+      <span class="arrow">→</span>
+      <div class="card found">
+        <span class="fmt">영상 · gif</span>
+        <span class="when">강의 영상 · 화면 녹화</span>
+        <span class="chips"><span class="chip">remotion-hub</span><span class="chip">review-video</span><span class="chip">gif_creator</span></span>
+        <span class="rule">gif는 UTILITIES 미등재(개선 3번)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="layer sys">
+    <div class="layer-head">
+      <span class="layer-name">L3 시스템 채널</span>
+      <span class="layer-desc">파일이 아니라 외부 시스템에 등록되는 산출물 · 포맷 규칙 대신 스킬 절차가 품질을 담보</span>
+    </div>
+    <div class="flow">
+      <div class="card">
+        <span class="fmt">Notion</span>
+        <span class="when">업무 칸반 · 문의 기록</span>
+        <span class="chips"><span class="chip">kanban</span><span class="chip">review-inquiry</span><span class="chip">notion-editor</span></span>
+      </div>
+      <div class="card">
+        <span class="fmt">Obsidian 위키</span>
+        <span class="when">지식 축적 · 업무일지</span>
+        <span class="chips"><span class="chip">wiki-ingest</span><span class="chip">wiki-query</span><span class="chip">일지</span></span>
+      </div>
+      <div class="card">
+        <span class="fmt">이메일</span>
+        <span class="when">드래프트 · 발송</span>
+        <span class="chips"><span class="chip">email-draft</span><span class="chip">gmail_draft.py</span></span>
+      </div>
+      <div class="card">
+        <span class="fmt">n8n 워크플로우</span>
+        <span class="when">자동화 배포물</span>
+        <span class="chips"><span class="chip">n8n-route</span><span class="chip">n8n-mcp</span></span>
+      </div>
+      <div class="card">
+        <span class="fmt">캘린더</span>
+        <span class="when">업무일지 자동 동기화</span>
+        <span class="chips"><span class="chip">worklog_calendar.py</span><span class="chip">Stop hook</span></span>
+      </div>
+      <div class="card">
+        <span class="fmt">Discord</span>
+        <span class="when">채널·webhook · 메시지</span>
+        <span class="chips"><span class="chip">discord-channel</span><span class="chip">hermes</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="legend">
+    <span><span class="key solid"></span>기존 5종 인식 안</span>
+    <span><span class="key dash"></span>실측으로 드러난 채널</span>
+  </div>
+  <p class="foot">건수: ~/Projects 최근 6개월(mtime 180일) 실측, 빌드 산출물·템플릿 제외. md는 handoff류 파일명 샘플링.</p>
+</div>
+</body>
+</html>
