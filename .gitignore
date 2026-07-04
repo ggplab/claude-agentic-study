@@ -26,6 +26,9 @@ _drafts/
 .claude/settings.local.json
 .claude/hooks/
 
+# Playwright MCP 스냅샷·스크린샷 임시 파일
+.playwright-mcp/
+
 # Pages 사이트 빌드 산출물 (markdown/html이 원천 — 빌드 시 재생성, 커밋 제외)
 site/dist/
 site/src/generated/
