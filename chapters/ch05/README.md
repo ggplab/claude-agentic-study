@@ -24,7 +24,7 @@ Agent = Capability Layer + Control Layer + Output Contract
 이 구조에서 Output Style은 세 번째 층인 **Output Contract**와 연결된다.
 
 ## 예시 : 
-
+```
 #### 작업 결과
 [검증됨] `src/config.ts`에서 API endpoint 설정을 수정했습니다.  
 [검증됨] 기존 `v1` 경로를 `v2` 경로로 변경했습니다.  
@@ -41,7 +41,7 @@ Agent = Capability Layer + Control Layer + Output Contract
 
 #### 다음 행동
 staging 환경에서 API 응답을 확인한 뒤 배포를 승인하는 것이 좋습니다.
-
+```
 
 
 ## 🎯 각자 고른 핵심 개념 1개
