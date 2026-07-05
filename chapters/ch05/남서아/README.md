@@ -60,6 +60,20 @@
 - **위치의 힘(운영)**: 스타일에 심으면 매 세션 자동 적용 + 리마인더 재주입 → 사람이 깜빡해도 규칙이 산다. 효과의 실체는 "시스템 프롬프트가 더 세다"가 아니라 **"반복 없이 일관 적용된다"** 쪽에 가깝다
 - **믿음의 한계**: 지침은 확률을 낮출 뿐 보장이 아니다. 공식 가이드도 "크게 줄이지만 완전 제거는 불가"라고 명시 → **"지침을 넣었다 = 환각이 사라졌다"로 착각하지 않기**
 
+### 애초에 "I don't know" 허용은 왜 통하는가 — 원리
+
+> 지침 한 줄이 왜 효과를 내는지 근거를 파봤다. 결론: 모델이 몰라서 지어내는 게 아니라, **"모른다"는 선택지가 학습 과정에서 억눌려 있어서**다.
+
+1. **LLM은 "가장 그럴듯한 이어짓기"를 뽑는 기계다**
+   - 모르는 질문에서도 그럴듯한 URL·버전 번호가 확률상 자연스러운 연속이면 그냥 나온다. 환각은 버그가 아니라 이 구조의 기본 동작
+2. **훈련이 "찍기"를 보상해왔다** — [Why Language Models Hallucinate (OpenAI, 2025)](https://arxiv.org/abs/2509.04664)
+   - 오답 감점 없는 시험에선 찍는 게 기대점수상 이득이듯, 대부분의 벤치마크·평가가 빈칸("모르겠다")보다 자신 있는 오답에 점수를 줬다 → 모델은 시험 잘 보는 수험생으로 최적화되며 불확실할 때 찍도록 훈련된다는 것이 논문의 핵심 논증
+3. **그런데 모델은 자기가 모른다는 걸 어느 정도 "안다"** — [Language Models (Mostly) Know What They Know (Anthropic, 2022)](https://arxiv.org/abs/2207.05221)
+   - 모델이 자기 답이 맞을 확률(P(True))과 "내가 이 질문의 답을 아는지"(P(IK))를 꽤 잘 추정한다는 실측 — **불확실성 신호는 이미 모델 안에 있다**
+
+- **종합**: "모르면 모른다고 해도 된다"는 지침은 새 능력을 주는 게 아니라, 2번이 억누른 "모르겠다" 출력 경로를 다시 열어 3번의 내부 캘리브레이션이 겉으로 나오게 하는 것 → 지침 한 줄치고 효과가 큰 이유
+- **같은 원리에서 나오는 한계**: "(mostly)"다 — 모델이 자신 있게 틀리는 영역(훈련 데이터에 그럴듯한 오답이 많은 곳)에선 이 지침도 안 통한다. 그래서 도구 검증 강제가 별도 축으로 필요하다
+
 ---
 
 ## 3. 참고 자료 지도 — 프롬프트 개선에 쓸 것들
@@ -111,6 +125,6 @@
 
 1. [platform.claude.com — Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations) (공식)
 2. [code.claude.com — Output styles](https://code.claude.com/docs/en/output-styles) · [Prompt caching](https://code.claude.com/docs/en/prompt-caching) (공식)
-3. [arXiv 2305.13252](https://arxiv.org/abs/2305.13252) · [arXiv 2309.11495](https://arxiv.org/abs/2309.11495) (학술)
+3. [arXiv 2305.13252](https://arxiv.org/abs/2305.13252) · [arXiv 2309.11495](https://arxiv.org/abs/2309.11495) · [arXiv 2207.05221](https://arxiv.org/abs/2207.05221) (Anthropic, P(IK) 캘리브레이션) · [arXiv 2509.04664](https://arxiv.org/abs/2509.04664) (OpenAI, 찍기 보상 구조) (학술)
 4. [mingrath gist](https://gist.github.com/mingrath/7e292d9ca976f63e499db971f21b6bbe) · [instantX-research](https://github.com/instantX-research/anthropic-anti-hallucinate-skills) · [awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) (실사례)
 5. 책 〈클로드 코드로 시작하는 실전 에이전틱 코딩〉 5장 해당 절 · 서브에이전트 조사 2건(2026-07-05)
