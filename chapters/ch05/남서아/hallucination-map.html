@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>환각 방지 지침 — 어디에 심고, 얼마나 믿을까</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", sans-serif; background: #fff; color: #333; padding: 40px; width: 1180px; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  .sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+  .cols { display: flex; gap: 24px; }
+  .col { flex: 1; }
+  .col h2 { font-size: 16px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #333; }
+  .card { border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; font-size: 13.5px; line-height: 1.55; }
+  .card b { display: block; font-size: 14.5px; margin-bottom: 3px; }
+  .rule { background: #EAF3FB; border-left: 4px solid #5B9BD5; }
+  .layer { background: #F4EFFA; border-left: 4px solid #9B7EC8; }
+  .evi-yes { background: #EBF6EC; border-left: 4px solid #6BAF6E; }
+  .evi-book { background: #FDF3E3; border-left: 4px solid #E5A94E; }
+  .evi-no { background: #FBEAEA; border-left: 4px solid #D97070; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; font-weight: 700; }
+  .t-yes { background: #6BAF6E; color: #fff; }
+  .t-book { background: #E5A94E; color: #fff; }
+  .t-no { background: #D97070; color: #fff; }
+  .foot { margin-top: 24px; font-size: 12px; color: #999; }
+</style>
+</head>
+<body>
+  <h1>환각 방지 지침 — 어디에 심고, 얼마나 믿을까</h1>
+  <div class="sub">ch05 출력 스타일 · 책 내용 × 공식 문서 실측 비교 · 남서아</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>① 규칙 4축 (책 5장)</h2>
+      <div class="card rule"><b>URL 인용 정책</b>도구 응답에 실제 나타난 URL만 인용. 패턴 추측 생성 금지. 못 찾으면 "찾을 수 없습니다" 명시</div>
+      <div class="card rule"><b>불확실성 표현 허용</b>"모르겠다"라고 말할 길을 열어 준다 — 환각의 주요 원인 차단</div>
+      <div class="card rule"><b>도구 결과 기반 강제</b>파일시스템·문서 검색으로 확인한 것만 단정. 버전·API 주장 금지</div>
+      <div class="card rule"><b>출처 표시 (팀 검증 스타일)</b>파일:줄번호 / WebFetch URL / 라이브러리·버전 — 모든 기술 주장에 추적 가능한 출처</div>
+    </div>
+
+    <div class="col">
+      <h2>② 어디에 심는가 (계층)</h2>
+      <div class="card layer"><b>요청 프롬프트</b>매번 반복해야 함. Anthropic 공식 가이드의 원래 위치</div>
+      <div class="card layer"><b>CLAUDE.md / rules</b>시스템 프롬프트 뒤에 <u>추가</u>. 커뮤니티 실사례 대부분이 여기 (gist·저장소)</div>
+      <div class="card layer"><b>output style</b>시스템 프롬프트 끝에 지침 추가 + 대화 중 리마인더. 세션 시작 시 고정. 책의 제안 위치</div>
+      <div class="card layer"><b>스킬 / 에이전트 frontmatter</b>특정 작업 단위로만 적용. 내 다음 실험 위치 (전용 스킬)</div>
+    </div>
+
+    <div class="col">
+      <h2>③ 근거 수준 (실측)</h2>
+      <div class="card evi-yes"><b>기법 자체 <span class="tag t-yes">공식 근거</span></b>"I don't know" 허용·인용 grounding·인용 검증은 Anthropic 공식 가이드 + 학술 연구(According-to, CoVe)로 뒷받침</div>
+      <div class="card evi-book"><b>output style에 심기 <span class="tag t-book">책의 응용</span></b>공식 output styles 문서에 환각 언급 없음. 공식 기법을 스타일 파일로 옮긴 책의 제안</div>
+      <div class="card evi-no"><b>"시스템 수준이 더 효과적" <span class="tag t-no">근거 없음</span></b>요청 프롬프트 대비 효과 비교는 공식·벤치마크 모두 부재. 반복 없이 자동 적용된다는 운영 이점이 실익</div>
+      <div class="card evi-no"><b>규칙 파일의 정량 효과 <span class="tag t-no">공백</span></b>CLAUDE.md류 규칙을 통제 벤치마크로 잰 자료 없음 → 내 before/after 실험 거리</div>
+    </div>
+  </div>
+
+  <div class="foot">출처: platform.claude.com reduce-hallucinations · code.claude.com output-styles · arXiv 2305.13252 / 2309.11495 · 상세는 README 참조</div>
+</body>
+</html>
