@@ -35,9 +35,24 @@
 | 주장 | 판정 | 근거 |
 |---|---|---|
 | 환각 감소 기법 자체 | ✅ 공식 | Anthropic [Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations) 가이드에 "I don't know" 허용 · 인용 grounding · 인용 검증 명시 |
-| 출력 스타일이 시스템 프롬프트를 바꾼다 | ✅ 공식 | [Output styles](https://code.claude.com/docs/en/output-styles): 커스텀 지침은 시스템 프롬프트 **끝에 추가** + 대화 중 준수 리마인더 발생. `keep-coding-instructions: false`(기본)면 내장 SWE 지침 제외. 세션 시작 시 1회 로드 |
+| 출력 스타일이 시스템 프롬프트를 바꾼다 | ✅ 공식 | [Output styles](https://code.claude.com/docs/en/output-styles) — 정확한 동작은 아래 "동작 원리 3가지" 참조 |
 | "출력 스타일 = 환각 방지 수단" | ⚠️ 책의 응용 | 공식 output styles 문서에 환각 언급 **없음**(역할·톤·형식 변경 용도). 공식 프롬프트 기법을 스타일 파일로 옮긴 제안 |
 | "시스템 수준이 요청 프롬프트보다 효과적" | ❌ 근거 없음 | 공식 비교 설명·벤치마크 모두 부재 |
+
+### output style 동작 원리 3가지 — 지침을 여기 심으면 무슨 일이 생기나
+
+1. **끝에 추가 + 대화 중 리마인더 재주입**
+   - 클로드 코드는 매 세션 자체 시스템 프롬프트(내장 코딩 지침)로 시작하고, 커스텀 스타일 지침은 그 **맨 뒤에 덧붙는다** (통째로 갈아끼우는 게 아님)
+   - 대화가 길어지면 모델이 앞쪽 지침을 잊는 경향이 있는데, 클로드 코드가 대화 중간에 "스타일 지침을 지켜라"는 리마인더를 **자동으로 다시 끼워넣는다**
+   - → 환각 방지 지침을 CLAUDE.md가 아니라 스타일에 심을 때의 실질 이점: **지침이 계속 재주입돼 긴 세션에서도 살아남는다**
+2. **`keep-coding-instructions: false`(기본)의 함정**
+   - 커스텀 스타일을 켜면 기본적으로 내장 SWE 지침(변경 범위 잡기·주석·작업 검증 방법)이 **빠져버린다**
+   - → "환각 방지 스타일"을 켰더니 코딩 능력이 은근히 깎이는 부작용 가능. 코딩 세션용이면 frontmatter에 `keep-coding-instructions: true` 필수
+3. **세션 시작 시 1회 로드 (프롬프트 캐싱)**
+   - 스타일 파일은 세션 시작 때 한 번만 읽힌다. 세션 도중 `.md`를 고쳐도 지금 대화엔 반영 안 됨 → `/clear` 또는 새 세션 필요
+   - 이유는 프롬프트 캐싱: 시스템 프롬프트를 고정해야 매 턴 비용이 싸진다
+
+- **헤르메스 실험에 대입**: 스킬/CLAUDE.md 방식은 "추가"라 SWE 능력 보존이 쉽고, output style 방식은 리마인더 재주입이 있는 대신 `keep-coding-instructions`를 챙겨야 한다 — before/after 비교에서 통제할 변수
 
 ### 그래서 "왜 효과가 있는(것처럼 보이는)가" — 내 정리
 
