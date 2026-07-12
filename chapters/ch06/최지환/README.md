@@ -167,14 +167,9 @@ Version: Python 3.13+
 
 - 내 `~/.claude/settings.json`에 `cleanupPeriodDays` 키 없음 확인 → 기본 30일이었음. 주 1회 스터디 페이스면 지난 회차 세션을 되짚기에 빠듯해서 **60일로 설정 완료** (`"cleanupPeriodDays": 60`, 2026-07-12).
 - 6장의 "파일에 써라" 원리가 내 환경에선 이미 **훅으로 자동화**되어 있음을 확인: OMC가 `PreCompact`/`SessionEnd`에서 프로젝트 메모리·위키를 보존하고, anamnesis가 같은 이벤트에서 세션을 인덱싱(`async: true`) — ch07 정리에서 만든 "내 환경 훅 지도"와 직결 (ch07 폴더로 추후 업로드 예정).
-- (TODO) `.claude/rules/` + `paths` 조건부 로딩을 이 스터디 저장소에 실제로 구성해 보기.
+- 추가 논문 분석 : https://arxiv.org/html/2603.07670v1 / ACON 
 
 ## 의문 / 더 파볼 것
-
-- 177~183쪽(체크포인팅 절 본문) 사진 누락 — 체크포인트 저장 범위(클로드 도구만 추적, Bash는 제외)는 7장 pre/post-bash 훅에서 역으로 확인됨. 원문 보강 필요.
-- Auto Compact를 끄는 저자 방식 vs 내 환경(OMC pre-compact 훅이 압축 전 메모리를 구제) — 어느 쪽이 내 워크플로에 맞나? 나아가 **ACON식 압축 가이드라인 최적화를 PreCompact 훅 + `/compact` custom_instructions로 흉내 낼 수 있나?** (실패 사례를 모아 보존 지침을 반복 개선하는 루프)
-- 하위 디렉터리 CLAUDE.md가 compaction 후 소실된다면, 모노레포에서 서브패키지 규칙의 올바른 위치는? (`paths` rules로 옮기는 게 답인가 — 그것도 소실 대상인데 재로드 조건이 다름)
-
 ## 다음 챕터로 넘기는 메모
 
 - 7장(자동화: 비대화형 모드·훅·MCP·플러그인)은 이미 정리 완료 — ch07 폴더로 추후 업로드 예정.
