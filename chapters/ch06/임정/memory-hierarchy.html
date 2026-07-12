@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>메모리 계층 지도 · 작성 주체로 본 Claude Code 메모리</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #2b2f36;
+    --sub: #6b7280;
+    --line: #e5e7eb;
+    --human-bg: #eaf2fd;  --human-bd: #b7d3f5;  --human-ink: #1d4e89;
+    --claude-bg: #e8f6ec; --claude-bd: #b5e0c2; --claude-ink: #1f6b3a;
+    --sys-bg: #fdf3e3;    --sys-bd: #f3d9a4;    --sys-ink: #8a5a12;
+    --none-bg: #f4f5f7;   --none-bd: #d6d9de;
+    --card: #ffffff;
+    --badge-bg: #f3f4f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d; --ink: #e7e9ee; --sub: #9aa1ad; --line: #33363e;
+      --human-bg: #1c2a3d; --human-bd: #33527d; --human-ink: #9ec4f2;
+      --claude-bg: #1b2f22; --claude-bd: #2f5c40; --claude-ink: #99d8ae;
+      --sys-bg: #33290f;   --sys-bd: #6b571f;   --sys-ink: #ecc46a;
+      --none-bg: #202329;  --none-bd: #3a3e46;
+      --card: #1d2026; --badge-bg: #262a31;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", -apple-system, sans-serif;
+    width: 1180px; padding: 36px 40px;
+  }
+  h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
+  .sub { color: var(--sub); font-size: 13px; margin-top: 6px; }
+  .lane { border: 1.5px solid; border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
+  .lane-human  { background: var(--human-bg);  border-color: var(--human-bd); }
+  .lane-claude { background: var(--claude-bg); border-color: var(--claude-bd); }
+  .lane-sys    { background: var(--sys-bg);    border-color: var(--sys-bd); }
+  .lane-title { font-size: 15px; font-weight: 800; display: flex; align-items: baseline; gap: 10px; }
+  .lane-human  .lane-title { color: var(--human-ink); }
+  .lane-claude .lane-title { color: var(--claude-ink); }
+  .lane-sys    .lane-title { color: var(--sys-ink); }
+  .lane-title small { font-weight: 500; color: var(--sub); font-size: 12px; }
+  .row { display: flex; gap: 12px; margin-top: 12px; align-items: stretch; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; flex: 1; min-width: 0;
+  }
+  .card.none { background: var(--none-bg); border: 1.5px dashed var(--none-bd); color: var(--sub); }
+  .card h3 { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .card .path { font-family: "SF Mono", ui-monospace, monospace; font-size: 11px; color: var(--sub); margin-top: 3px; word-break: break-all; }
+  .card ul { list-style: none; margin-top: 8px; font-size: 12px; line-height: 1.55; }
+  .card ul li::before { content: "·"; margin-right: 5px; color: var(--sub); }
+  .badge {
+    font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--badge-bg); border: 1px solid var(--line); color: var(--sub); white-space: nowrap;
+  }
+  .num { font-weight: 800; }
+  .import { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--sub); }
+  .import .arrow { font-size: 15px; }
+  .inner {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; flex: 1;
+  }
+  .foot { margin-top: 20px; color: var(--sub); font-size: 11.5px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <h1>메모리 계층 지도: "누가 쓰는가"로 본 Claude Code 메모리</h1>
+  <div class="sub">로컬 실측 2026-07-12 · CLI v2.1.207 · 공식 문서 code.claude.com/docs/en/memory 대조</div>
+
+  <!-- 사람이 쓰는 메모리 -->
+  <div class="lane lane-human">
+    <div class="lane-title">✍️ 사람이 쓴다 <small>CLAUDE.md 4계층 + rules · 세션 시작 시 로드(연결, override 아님)</small></div>
+    <div class="row">
+      <div class="card none">
+        <h3>① 관리형 정책 <span class="badge">없음</span></h3>
+        <div class="path">/Library/Application Support/ClaudeCode/CLAUDE.md</div>
+        <ul><li>조직 강제 규칙 계층</li><li>실측: 디렉토리 자체 부재</li></ul>
+      </div>
+      <div class="card">
+        <h3>② User <span class="badge">항상 로드</span></h3>
+        <div class="path">~/CLAUDE.md (71줄) ※ 공식 경로 ~/.claude/CLAUDE.md 대신 홈 루트</div>
+        <ul>
+          <li>메타규칙 인덱스 (위임·토큰효율·문서생성)</li>
+          <li>상위 디렉토리 순회(walk)로 로드되는 구조</li>
+        </ul>
+        <div class="import"><span class="arrow">↳ @import</span>
+          <div class="inner"><b>AGENT_GUIDE.md</b> <span class="num">534줄</span> · 환경/운영 SSOT (크레덴셜 맵 · 프로젝트 레지스트리 · 운영규칙)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>rules <span class="badge">자동 주입</span></h3>
+        <div class="path">~/.claude/rules/ · 6파일 268줄</div>
+        <ul>
+          <li>behavior · content-creation · deployment</li>
+          <li>naming · python · writing-style</li>
+          <li>공식 paths: (조건부 로드) 미활용 → 전부 상시 주입</li>
+        </ul>
+      </div>
+    </div>
+    <div class="row">
+      <div class="card">
+        <h3>③ Project <span class="badge">항상 로드</span></h3>
+        <div class="path">./CLAUDE.md (38줄, git 커밋)</div>
+        <ul><li>스터디 규칙: 진행현황 갱신 · 정리본 스타일 · Pages 빌드</li><li>하위 디렉토리 CLAUDE.md는 lazy 로드</li></ul>
+      </div>
+      <div class="card">
+        <h3>④ Local <span class="badge">gitignore</span></h3>
+        <div class="path">~/CLAUDE.local.md (14줄)</div>
+        <ul><li>로컬 전용 메모 · SSOT 포인터만 ("복붙 금지" 명시)</li></ul>
+      </div>
+      <div class="card">
+        <h3>사람 메모리 합계</h3>
+        <ul>
+          <li>총 <span class="num">약 945줄</span>이 매 세션 주입</li>
+          <li>역할 분리: 환경지도(SSOT) / 행동규칙(rules) / 프로젝트규칙 / 로컬메모</li>
+          <li>공식 권장: 파일당 200줄 이하 (AGENT_GUIDE 534줄 = 2.7배)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 클로드가 쓰는 메모리 -->
+  <div class="lane lane-claude">
+    <div class="lane-title">🤖 클로드가 쓴다 <small>auto memory (v2.1.59+) · MEMORY.md 인덱스만 시작 시 로드(200줄/25KB), 본문 on-demand</small></div>
+    <div class="row">
+      <div class="card">
+        <h3>전체 규모</h3>
+        <div class="path">~/.claude/projects/&lt;프로젝트&gt;/memory/</div>
+        <ul>
+          <li>53개 프로젝트 중 <span class="num">34개</span>가 memory/ 보유</li>
+          <li>MEMORY.md 33개 · 메모리 파일 총 <span class="num">256개</span></li>
+          <li>같은 repo worktree 공유 · 머신 간 미공유</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>최다 보유 (type 분포)</h3>
+        <ul>
+          <li>Projects 루트: <span class="num">48파일</span> (project 21 · reference 12 · feedback 12 · user 3)</li>
+          <li>claude-book-hanbit-v2: <span class="num">26파일</span></li>
+        </ul>
+      </div>
+      <div class="card none">
+        <h3>이 스터디 프로젝트 <span class="badge">0개</span></h3>
+        <ul>
+          <li>디렉토리만 생성(2026-07-12), 내용 없음</li>
+          <li>반복 규칙이 이미 CLAUDE.md·스킬로 문서화된 영향</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 시스템이 쓰는 기록 -->
+  <div class="lane lane-sys">
+    <div class="lane-title">⚙️ 시스템이 쓴다 <small>로드가 아니라 기록 · 세션 단위 휘발(30일 보존)</small></div>
+    <div class="row">
+      <div class="card">
+        <h3>세션 트랜스크립트</h3>
+        <div class="path">~/.claude/projects/&lt;프로젝트&gt;/&lt;session-id&gt;.jsonl</div>
+        <ul><li>jsonl <span class="num">1,109개</span> · <span class="num">740MB</span> · 기본 30일 보존(cleanupPeriodDays)</li><li>--resume / --continue로 복구</li></ul>
+      </div>
+      <div class="card">
+        <h3>체크포인트</h3>
+        <div class="path">트랜스크립트 통합 저장 · 실측 file-history/ 28MB(168세션)</div>
+        <ul><li>매 프롬프트마다 생성 · /rewind로 복구</li><li>같은 세션 ID 안에서만 유효 · git 대체 아님</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>임정 · 6장 메모리와 대화 세션 관리 · claude-agentic-study</span>
+    <span>출처: code.claude.com/docs (memory · checkpointing · sessions) + 로컬 실측</span>
+  </div>
+</body>
+</html>
