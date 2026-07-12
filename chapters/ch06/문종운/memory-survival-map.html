@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>메모리 생존 지도 — 무엇이 /compact를 살아남는가</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --ink:#e6e8ec; --dim:#9aa3b2;
+    --live:#3fb950; --dead:#f85149; --lazy:#d29922; --accent:#58a6ff; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,'Segoe UI','Apple SD Gothic Neo',sans-serif;
+       padding:32px 28px;width:1280px}
+  h1{font-size:23px;letter-spacing:-.4px}
+  h1 small{display:block;color:var(--dim);font-size:13px;font-weight:400;margin-top:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:16px;margin-top:22px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px}
+  .panel h2{font-size:14px;color:var(--accent);margin-bottom:4px}
+  .panel h2 span{color:var(--dim);font-weight:400}
+  .sub{font-size:11.5px;color:var(--dim);margin-bottom:12px;line-height:1.5}
+  .layer{border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:7px;
+         padding:9px 11px;margin-bottom:7px;background:#12151b}
+  .layer .t{font-size:12.5px;font-weight:600}
+  .layer .p{font-family:ui-monospace,SFMono-Regular,monospace;font-size:10.5px;color:var(--accent);margin-top:3px;word-break:break-all}
+  .layer .d{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.45}
+  .layer.off{border-left-color:#3a3f4b;opacity:.62}
+  .flow{text-align:center;color:var(--dim);font-size:11px;margin:2px 0 6px}
+  .note{margin-top:10px;font-size:11px;color:var(--dim);background:#12151b;border:1px dashed var(--line);
+        border-radius:7px;padding:8px 10px;line-height:1.55}
+  .note b{color:var(--ink)}
+  .idx{border:1px solid var(--line);border-radius:8px;padding:10px 11px;background:#12151b;margin-bottom:8px}
+  .cap{display:inline-block;background:#1f2937;color:var(--lazy);border:1px solid #3b4252;border-radius:5px;
+       font-size:10.5px;padding:2px 7px;margin-top:6px;font-family:ui-monospace,monospace}
+  .files{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .file{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim);border:1px dashed #3b4252;
+        border-radius:5px;padding:3px 7px}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;color:var(--dim);font-weight:500;font-size:11px;padding:0 0 7px;border-bottom:1px solid var(--line)}
+  td{padding:7px 4px 7px 0;border-bottom:1px solid #1f2430;vertical-align:top;line-height:1.4}
+  td.s{white-space:nowrap;font-weight:600;font-size:11px}
+  .live{color:var(--live)} .dead{color:var(--dead)} .lazy{color:var(--lazy)}
+  code{font-family:ui-monospace,monospace;font-size:10.8px;color:var(--accent)}
+  .foot{margin-top:18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .card .k{font-size:11px;color:var(--dim);margin-bottom:5px}
+  .card .v{font-size:12.5px;line-height:1.5}
+  .card .v b{color:var(--live)}
+  .x{color:var(--dead);font-weight:600}
+</style>
+</head>
+<body>
+  <h1>메모리 생존 지도 — 무엇이 <code style="font-size:19px">/compact</code>를 살아남는가
+    <small>세션은 사라진다. 파일에 적힌 것만 남는다. · 실측 기준: claude-agentic-study 프로젝트 / Claude Code 2.1.207</small>
+  </h1>
+
+  <div class="grid">
+    <!-- 1 -->
+    <section class="panel">
+      <h2>① CLAUDE.md 4계층 <span>— 지침·규칙</span></h2>
+      <p class="sub">넓은 범위 → 좁은 범위 순으로 <b style="color:#e6e8ec">이어붙는다(concat)</b>.
+        덮어쓰기가 아니다. 뒤에 오는 게 더 구체적일 뿐, 모순되면 클로드가 임의로 고른다.</p>
+
+      <div class="layer off">
+        <div class="t">1. 관리형 정책 <span style="color:var(--dim);font-weight:400">— 전사 규칙</span></div>
+        <div class="p">/Library/Application Support/ClaudeCode/CLAUDE.md</div>
+        <div class="d">내 환경: <span class="x">없음</span> (개인 머신)</div>
+      </div>
+      <div class="flow">▼</div>
+      <div class="layer">
+        <div class="t">2. 사용자 메모리 <span style="color:var(--dim);font-weight:400">— 내 모든 프로젝트</span></div>
+        <div class="p">~/.claude/CLAUDE.md</div>
+        <div class="d">내 환경: <b>60줄</b> — 하네스 호출맵·에이전트 티어·품질 게이트</div>
+      </div>
+      <div class="flow">▼</div>
+      <div class="layer">
+        <div class="t">3. 프로젝트 메모리 <span style="color:var(--dim);font-weight:400">— 팀 공유(커밋)</span></div>
+        <div class="p">./CLAUDE.md</div>
+        <div class="d">내 환경: <b>38줄</b> — 진행현황 갱신 규칙·정리본 스타일·Pages 배포</div>
+      </div>
+      <div class="flow">▼</div>
+      <div class="layer off">
+        <div class="t">4. 프로젝트 로컬 <span style="color:var(--dim);font-weight:400">— 나만(gitignore)</span></div>
+        <div class="p">./CLAUDE.local.md</div>
+        <div class="d">내 환경: <span class="x">없음</span> · deprecated 아님 · worktree 간 공유 안 됨</div>
+      </div>
+
+      <div class="note"><b>@import</b> · 재귀 <b>최대 4 hops</b>(문서 현행값) · <code>@~/</code> 홈 경로 가능 ·
+        코드블록 안 <code>@</code>는 무시 · <code>/memory</code>로 로드된 파일 확인<br>
+        <b>권장 크기: 200줄 미만</b> — 넘으면 컨텍스트를 먹고 <b>지시 준수율이 떨어진다</b></div>
+    </section>
+
+    <!-- 2 -->
+    <section class="panel">
+      <h2>② Auto memory <span>— 학습·패턴</span></h2>
+      <p class="sub">CLAUDE.md와 <b style="color:#e6e8ec">책임이 다르다</b>.
+        규칙은 CLAUDE.md, <b style="color:#e6e8ec">겪어서 알게 된 사실</b>은 memory.
+        경로는 <b style="color:#e6e8ec">git 저장소 기준</b>이라 같은 repo의 worktree들이 공유한다.</p>
+
+      <div class="idx">
+        <div style="font-size:12.5px;font-weight:600">MEMORY.md <span style="color:var(--dim);font-weight:400">= 인덱스</span></div>
+        <div class="p" style="font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);margin-top:3px">
+          ~/.claude/projects/&lt;project&gt;/memory/</div>
+        <div class="cap">세션 시작 시 앞 200줄 또는 25KB만 로드 (먼저 오는 쪽)</div>
+        <div class="d" style="font-size:11px;color:var(--dim);margin-top:6px">내 실측: <b style="color:#e6e8ec">6줄 / 794B</b> — 한도의 3%</div>
+      </div>
+
+      <div class="flow">▼ 필요할 때만 (on-demand)</div>
+
+      <div class="idx" style="border-style:dashed">
+        <div style="font-size:12px;color:var(--lazy);font-weight:600">사실 파일 — 시작 시 로드 안 됨</div>
+        <div class="files">
+          <span class="file">pages-deploy-permissions.md</span>
+          <span class="file">skill-files-no-hook-bypass.md</span>
+          <span class="file">skill-reviewer-is-plugin-dev-agent.md</span>
+          <span class="file">skill-create-bundle-wip.md</span>
+        </div>
+        <div class="d" style="font-size:11px;color:var(--dim);margin-top:7px">
+          클로드가 인덱스 한 줄을 보고 <b style="color:#e6e8ec">그때 Read</b>한다 → 그래서 응답이 한 박자 늦다</div>
+      </div>
+
+      <div class="note">파일 1개 = 사실 1개(단일 책임) · frontmatter <code>type</code>: user / feedback / project / reference<br>
+        <b>비대해지면 3중 손해</b>: ① 과거 기억이 현재와 어긋남 ② 컨텍스트 낭비 ③ on-demand Read로 지연</div>
+    </section>
+
+    <!-- 3 -->
+    <section class="panel">
+      <h2>③ /compact 생존표 <span>— 공식 문서 기준</span></h2>
+      <p class="sub">압축은 대화를 요약해 <b style="color:#e6e8ec">컨텍스트만</b> 비운다(세션은 유지).
+        이때 <b style="color:#e6e8ec">디스크에 있는 것은 다시 주입되고, 대화에만 있던 것은 사라진다</b>.</p>
+      <table>
+        <tr><th>항목</th><th>compaction 후</th></tr>
+        <tr><td>시스템 프롬프트 / output style</td><td class="s live">그대로</td></tr>
+        <tr><td>루트 <code>CLAUDE.md</code>, path 없는 rules</td><td class="s live">재주입</td></tr>
+        <tr><td><b>Auto memory (MEMORY.md)</b></td><td class="s live">재주입</td></tr>
+        <tr><td><code>paths:</code> 있는 rules</td><td class="s dead">소실</td></tr>
+        <tr><td>하위 디렉터리 <code>CLAUDE.md</code></td><td class="s dead">소실</td></tr>
+        <tr><td>호출된 skill 본문</td><td class="s lazy">재로드<br><span style="font-weight:400;font-size:10.5px">skill당 5k / 총 25k 토큰 캡</span></td></tr>
+        <tr><td>대화·도구 출력 원문</td><td class="s dead">요약으로 대체</td></tr>
+        <tr><td>훅(hooks)</td><td class="s live">무관<br><span style="font-weight:400;font-size:10.5px">컨텍스트가 아니라 코드</span></td></tr>
+      </table>
+      <div class="note"><b>결론</b>: 다음 세션의 나에게 남길 것이면
+        <b>대화에 쓰지 말고 파일에 써라</b> — 규칙이면 CLAUDE.md, 사실이면 memory.</div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <div class="card">
+      <div class="k">세션은 어디에 쌓이나 — 메모 정정</div>
+      <div class="v"><code>~/.claude/sessions/</code>는 <span class="x">대화 기록이 아니다</span>.
+        pid·sessionId·cwd만 든 <b style="color:#9aa3b2">런타임 레지스트리</b>(내 환경 7개 / 28KB).<br>
+        진짜 transcript는 <code>~/.claude/projects/&lt;slug&gt;/&lt;session-id&gt;.jsonl</code>
+        — 이 프로젝트만 <b>10개</b>, 전체 <b>50MB</b>.</div>
+    </div>
+    <div class="card">
+      <div class="k">30일 뒤 지워진다</div>
+      <div class="v"><code>cleanupPeriodDays</code> 기본 <b>30</b>(최소 1, 0은 오류).
+        시작할 때 오래된 세션 파일을 지운다.<br>
+        내 <code>settings.json</code>엔 이 키가 <span style="color:#9aa3b2">없음</span> → 기본 30일로 도는 중.<br>
+        <code>--continue</code> 최근 1개 / <code>--resume</code> 골라서 재개.</div>
+    </div>
+    <div class="card">
+      <div class="k">병렬 작업: 두 가지 오염을 따로 막는다</div>
+      <div class="v"><b>파일 오염</b> → <code>git worktree</code>로 디렉터리를 쪼갠다
+        (<code>claude --worktree</code>, 공식 권장).<br>
+        <b>컨텍스트 오염</b> → 서브에이전트. 각자 <b>독립 컨텍스트</b>에서 일하고
+        <b>요약만</b> 메인으로 돌려준다.</div>
+    </div>
+  </div>
+</body>
+</html>
