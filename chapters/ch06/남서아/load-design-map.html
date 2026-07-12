@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>지침의 수명 — 로드는 설계되고, 언로드는 없다</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", sans-serif; background: #fff; color: #333; padding: 40px; width: 1180px; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  .sub { color: #888; font-size: 14px; margin-bottom: 26px; }
+  h2 { font-size: 16px; margin: 22px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #333; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; line-height: 1.5; }
+  th { background: #f7f7f7; font-size: 13px; }
+  td:first-child { font-weight: 700; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 11.5px; padding: 2px 9px; border-radius: 999px; font-weight: 700; color: #fff; }
+  .c-always { background: #5B9BD5; }
+  .c-cond { background: #9B7EC8; }
+  .c-skill { background: #6BAF6E; }
+  .c-none { background: #D97070; }
+  .timeline { display: flex; align-items: stretch; gap: 0; margin-top: 6px; }
+  .tstep { flex: 1; padding: 13px 14px; font-size: 13px; line-height: 1.5; border-radius: 10px; position: relative; margin-right: 26px; }
+  .tstep:last-child { margin-right: 0; }
+  .tstep::after { content: "→"; position: absolute; right: -21px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 17px; }
+  .tstep:last-child::after { content: ""; }
+  .tstep b { display: block; font-size: 14px; margin-bottom: 4px; }
+  .t1 { background: #EAF3FB; } .t2 { background: #F4EFFA; } .t3 { background: #FDF3E3; } .t4 { background: #FBEAEA; }
+  .note { margin-top: 14px; padding: 12px 16px; background: #F7F7F7; border-left: 4px solid #999; font-size: 13px; line-height: 1.6; border-radius: 0 8px 8px 0; }
+  .foot { margin-top: 22px; font-size: 12px; color: #999; }
+  u { text-underline-offset: 2px; }
+</style>
+</head>
+<body>
+  <h1>지침의 수명 — 로드는 설계되고, 언로드는 없다</h1>
+  <div class="sub">ch06 메모리 · CLAUDE.md vs .claude/rules/ · 남서아</div>
+
+  <h2>① 무엇을 / 언제 — 지침 파일 4종의 로드 시점</h2>
+  <table>
+    <tr><th>파일</th><th>축</th><th>로드 시점</th><th>특징</th></tr>
+    <tr><td>CLAUDE.md <span class="chip c-always">항상</span></td><td>무엇을 기억할 것인가</td><td>세션 시작 시 전문</td><td>트리 위로 걸어 올라가며 전부 concat (덮어쓰기 아님) · 200줄 이하 권장</td></tr>
+    <tr><td>@import <span class="chip c-always">항상</span></td><td>정리(모듈화)</td><td>세션 시작 시 전개</td><td>최대 4단계 재귀 · <u>컨텍스트 절약은 안 됨</u> — 어차피 다 로드</td></tr>
+    <tr><td>rules + paths: <span class="chip c-cond">조건부</span></td><td>언제 적용할 것인가</td><td>매칭 파일을 read할 때</td><td>glob(`src/**/*.ts`)으로 범위 지정 · paths 없으면 "항상"과 동일</td></tr>
+    <tr><td>스킬 <span class="chip c-skill">요청 시</span></td><td>작업 절차</td><td>모델이 맥락 맞다고 판단할 때</td><td>평소엔 description만 상주 (점진적 공개)</td></tr>
+  </table>
+
+  <h2>② 수명 타임라인 — 언로드 규칙은 없다 <span class="chip c-none">확인됨</span></h2>
+  <div class="timeline">
+    <div class="tstep t1"><b>세션 시작</b>CLAUDE.md 전문 + paths 없는 rules 로드</div>
+    <div class="tstep t2"><b>작업 중</b>매칭 read → paths rule 추가 로드. <u>한번 들어오면 계속 상주</u></div>
+    <div class="tstep t3"><b>/compact</b>루트 CLAUDE.md만 재주입. 하위 CLAUDE.md·paths rule은 소실 (다음 매칭 read 때 재로드)</div>
+    <div class="tstep t4"><b>/clear · 세션 끝</b>전부 소멸. 이것이 유일한 "언로드"</div>
+  </div>
+  <div class="note">선택적 <b>로드</b>는 있는데 선택적 <b>언로드</b>는 없다 → 안 쓰는 지침이 세션 내내 컨텍스트를 차지하지 않게 하려면, 애초에 <b>로드 조건(paths·스킬 트리거)을 좁게 설계</b>하는 수밖에 없다.</div>
+
+  <h2>③ 헤르메스 SOUL.md에 대입</h2>
+  <table>
+    <tr><th>지금 (SOUL.md 한 파일)</th><th>분리 설계</th><th>대응 개념</th></tr>
+    <tr><td>캐릭터·톤·관계 규칙</td><td>SOUL.md에 유지</td><td>CLAUDE.md — 항상 유지할 정체성 <span class="chip c-always">항상</span></td></tr>
+    <tr><td>출력 규칙 (링크 포맷·개인정보)</td><td>SOUL.md에 유지 (매 응답 적용)</td><td>CLAUDE.md <span class="chip c-always">항상</span></td></tr>
+    <tr><td>도메인 운영 규칙 (구직 노트 경로·SoT 계약)</td><td>rules/jobs.md 등으로 분리</td><td>paths rule — 해당 노트 만질 때만 <span class="chip c-cond">조건부</span></td></tr>
+    <tr><td>절차 (위임 게이트·기록 순서)</td><td>스킬로 분리</td><td>스킬 — 작업 단위 <span class="chip c-skill">요청 시</span></td></tr>
+  </table>
+
+  <div class="foot">출처: code.claude.com/docs/en/memory (공식) · 헤르메스 SOUL.md 실측 · 상세는 README 참조</div>
+</body>
+</html>
