@@ -3,7 +3,7 @@
 - **관통 주제 (발표 핵심 1개)**: 내 자동화는 "차단"이 아니라 "주입" — 훅·headless·MCP 전부 흐름을 끊지 않는 부수효과로 설계되어 있었다
 - **⚠️ 교통정리 3건**
   1. 책의 훅 이벤트는 18개(그림 7-2 + 표 7-1·7-2) — 공식 문서 기준 현재 **30개**. 삭제된 건 없고 12개가 추가됨 (Setup, UserPromptExpansion, MessageDisplay, PostToolBatch, PermissionDenied, TaskCreated, StopFailure, CwdChanged, FileChanged, PostCompact, Elicitation, ElicitationResult) [1]
-  2. 내 인식 교정: "이메일 제안 → Discord o/x → 노션 칸반"은 headless `claude -p`가 아니라 **대화형 스킬**(kanban·review-inquiry)로 돌고 있었음 — 비대화형 자동화는 별개 7사례
+  2. 내 인식 교정(재교정 2026-07-19): "이메일 제안 → Discord o/x → 노션 칸반"은 headless로 도는 게 맞으나 그 주체가 `claude -p`가 아니라 **Gemini 기반 Node 스크립트 2개**였음 — 맥미니 launchd `inbound-watch`(매시간: gws Gmail 폴링 → Gemini 분류·요약 → Notion 수주판단 DB + Discord 카드) + `inbound-reaction-watch`(5분: ⭕/❌ 리액션 폴링 → 칸반 진행/거절). Claude는 그 뒤 **정밀검토 단계**(대화형 스킬 review-inquiry·contract-review)에서만 등장 — 자동화 계층(Gemini)과 판단 계층(Claude 대화형)의 2단 구조
   3. `--resume` 실사용은 맥미니 핸드오프 **단 1곳**, `--continue`/`-c`는 전 워크스페이스에서 **0건** — "다양하게 썼다"는 기억과 실측이 달랐음
 - **조사 방식**: sonnet Explore 서브에이전트 3개 fan-out (① 훅·MCP·플러그인 설정 ② claude -p 전수 grep ③ 저장소 규격) + 공식 문서(`code.claude.com/docs/en/hooks.md`) 원문 curl 대조
 
