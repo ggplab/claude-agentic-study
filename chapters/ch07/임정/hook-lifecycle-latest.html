@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>훅 생애주기 최신판 — 30개 이벤트 · 9개 분류</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, sans-serif; background: #fff; color: #1e293b; }
+  .wrap { width: 1180px; margin: 0 auto; padding: 36px 40px 44px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .sub { font-size: 14px; color: #64748b; margin-top: 6px; }
+  .legend { display: flex; gap: 18px; margin: 16px 0 26px; font-size: 13px; align-items: center; flex-wrap: wrap; }
+  .legend .chip { margin: 0; }
+  .cols { display: grid; grid-template-columns: 400px 1fr; gap: 28px; align-items: start; }
+
+  /* 왼쪽: 생애주기 플로우 */
+  .flow { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; }
+  .flow h2, .tax h2 { font-size: 15px; font-weight: 800; color: #334155; margin-bottom: 14px; }
+  .fbox { border-radius: 8px; padding: 8px 12px; font-size: 12.5px; text-align: center; background: #fff; border: 1.5px solid #cbd5e1; font-weight: 600; color: #475569; }
+  .fbox.loop { background: #eef2ff; border-color: #c7d2fe; }
+  .arrow { text-align: center; color: #94a3b8; font-size: 13px; line-height: 1.5; }
+  .stage { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 2px; }
+  .stage .hooks { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+  .nest { border: 1.5px dashed #a5b4fc; border-radius: 10px; padding: 10px; margin: 4px 0; background: #fafbff; }
+  .nest .cap { font-size: 11px; font-weight: 700; color: #6366f1; margin-bottom: 6px; }
+  .standalone { margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px; }
+  .standalone .cap { font-size: 11.5px; font-weight: 700; color: #64748b; margin-bottom: 8px; }
+  .standalone .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  /* 이벤트 칩 */
+  .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; white-space: nowrap; }
+  .chip.mine { background: #dbeafe; border: 1.5px solid #2563eb; color: #1d4ed8; font-weight: 800; }
+  .chip.off  { background: #f8fafc; border: 1px solid #e2e8f0; color: #b6bfcc; font-weight: 500; }
+  .chip .new { font-size: 9px; font-weight: 800; color: #fff; background: #f97316; border-radius: 4px; padding: 1px 4px; letter-spacing: 0; }
+  .chip.off .new { opacity: 0.75; }
+
+  /* 오른쪽: 분류 9그룹 */
+  .tax { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .group { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 12px 10px; background: #fff; }
+  .group h3 { font-size: 12.5px; font-weight: 800; color: #334155; margin-bottom: 3px; }
+  .group .desc { font-size: 10.5px; color: #94a3b8; margin-bottom: 8px; line-height: 1.4; }
+  .group .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .count { font-size: 10px; color: #64748b; font-weight: 600; background: #f1f5f9; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
+  .foot { margin-top: 22px; font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap" id="capture">
+  <h1>클로드 코드 훅 생애주기 — 최신판 (이벤트 30개 · 상위 분류 9그룹)</h1>
+  <div class="sub">책 그림 7-2·표 7-1·7-2(18개) → 공식 문서 2026-07 기준 30개로 갱신 · 신규 12개</div>
+  <div class="legend">
+    <span class="chip mine">내가 쓰는 이벤트 (5종·핸들러 9개)</span>
+    <span class="chip off">미사용 (흐림)</span>
+    <span class="chip off" style="opacity:1;color:#475569"><span class="new">NEW</span> 책 출간 이후 추가 (12개)</span>
+  </div>
+
+  <div class="cols">
+    <!-- 생애주기 플로우 -->
+    <div class="flow">
+      <h2>생애주기 흐름 (공식 문서 다이어그램 구조 기준)</h2>
+      <div class="stage"><div class="fbox">CLI 기동 (--init-only / -p --maintenance)</div><div class="hooks"><span class="chip off">Setup <span class="new">NEW</span></span></div></div>
+      <div class="arrow">↓</div>
+      <div class="stage"><div class="fbox">세션 시작·재개</div><div class="hooks"><span class="chip off">SessionStart</span><span class="chip off">InstructionsLoaded</span></div></div>
+      <div class="arrow">↓</div>
+      <div class="stage"><div class="fbox loop">사용자 프롬프트 제출</div><div class="hooks"><span class="chip mine">UserPromptSubmit</span><span class="chip off">UserPromptExpansion <span class="new">NEW</span></span></div></div>
+      <div class="arrow">↓</div>
+      <div class="nest">
+        <div class="cap">에이전틱 루프 (도구 호출 반복)</div>
+        <div class="stage"><div class="fbox">도구 호출 준비</div><div class="hooks"><span class="chip mine">PreToolUse</span></div></div>
+        <div class="arrow">↓</div>
+        <div class="stage"><div class="fbox">권한 판정</div><div class="hooks"><span class="chip off">PermissionRequest</span><span class="chip off">PermissionDenied <span class="new">NEW</span></span></div></div>
+        <div class="arrow">↓</div>
+        <div class="stage"><div class="fbox">도구 실행 (MCP면 내부에 Elicitation)</div><div class="hooks"><span class="chip off">Elicitation <span class="new">NEW</span></span><span class="chip off">ElicitationResult <span class="new">NEW</span></span></div></div>
+        <div class="arrow">↓</div>
+        <div class="stage"><div class="fbox">성공 / 실패 / 배치 완료</div><div class="hooks"><span class="chip mine">PostToolUse</span><span class="chip off">PostToolUseFailure</span><span class="chip off">PostToolBatch <span class="new">NEW</span></span></div></div>
+        <div class="arrow">↓</div>
+        <div class="stage"><div class="fbox">서브에이전트·태스크 위임 시</div><div class="hooks"><span class="chip off">SubagentStart</span><span class="chip off">SubagentStop</span><span class="chip off">TaskCreated <span class="new">NEW</span></span><span class="chip off">TaskCompleted</span></div></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="stage"><div class="fbox loop">응답 완료 / API 오류 종료</div><div class="hooks"><span class="chip mine">Stop ×3 (async)</span><span class="chip off">StopFailure <span class="new">NEW</span></span></div></div>
+      <div class="arrow">↓ (다음 턴 반복 또는)</div>
+      <div class="stage"><div class="fbox">컨텍스트 압축 / 팀원 유휴</div><div class="hooks"><span class="chip off">PreCompact</span><span class="chip off">PostCompact <span class="new">NEW</span></span><span class="chip off">TeammateIdle</span></div></div>
+      <div class="arrow">↓</div>
+      <div class="stage"><div class="fbox">세션 종료</div><div class="hooks"><span class="chip off">SessionEnd</span></div></div>
+
+      <div class="standalone">
+        <div class="cap">시점 독립 이벤트 (흐름 밖에서 발생 시 즉시)</div>
+        <div class="chips">
+          <span class="chip mine">Notification</span>
+          <span class="chip off">ConfigChange</span>
+          <span class="chip off">CwdChanged <span class="new">NEW</span></span>
+          <span class="chip off">FileChanged <span class="new">NEW</span></span>
+          <span class="chip off">WorktreeCreate</span>
+          <span class="chip off">WorktreeRemove</span>
+          <span class="chip off">MessageDisplay <span class="new">NEW</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 분류 9그룹 -->
+    <div>
+      <div class="tax">
+        <div class="group"><h3>① 세션 생애주기<span class="count">3</span></h3><div class="desc">세션의 시작과 끝, 명시적 초기화</div><div class="chips"><span class="chip off">Setup <span class="new">NEW</span></span><span class="chip off">SessionStart</span><span class="chip off">SessionEnd</span></div></div>
+        <div class="group"><h3>② 프롬프트·턴<span class="count">4</span></h3><div class="desc">한 턴의 입구와 출구</div><div class="chips"><span class="chip mine">UserPromptSubmit</span><span class="chip off">UserPromptExpansion <span class="new">NEW</span></span><span class="chip mine">Stop</span><span class="chip off">StopFailure <span class="new">NEW</span></span></div></div>
+        <div class="group"><h3>③ 도구 실행<span class="count">4</span></h3><div class="desc">개별 도구 호출의 전·후·실패·배치</div><div class="chips"><span class="chip mine">PreToolUse</span><span class="chip mine">PostToolUse</span><span class="chip off">PostToolUseFailure</span><span class="chip off">PostToolBatch <span class="new">NEW</span></span></div></div>
+        <div class="group"><h3>④ 권한<span class="count">2</span></h3><div class="desc">권한 다이얼로그·auto mode 거부</div><div class="chips"><span class="chip off">PermissionRequest</span><span class="chip off">PermissionDenied <span class="new">NEW</span></span></div></div>
+        <div class="group"><h3>⑤ 위임 (에이전트·태스크·팀)<span class="count">5</span></h3><div class="desc">서브에이전트·태스크·에이전트 팀</div><div class="chips"><span class="chip off">SubagentStart</span><span class="chip off">SubagentStop</span><span class="chip off">TaskCreated <span class="new">NEW</span></span><span class="chip off">TaskCompleted</span><span class="chip off">TeammateIdle</span></div></div>
+        <div class="group"><h3>⑥ 컨텍스트 관리<span class="count">3</span></h3><div class="desc">압축과 지침 로드</div><div class="chips"><span class="chip off">PreCompact</span><span class="chip off">PostCompact <span class="new">NEW</span></span><span class="chip off">InstructionsLoaded</span></div></div>
+        <div class="group"><h3>⑦ 환경·설정<span class="count">5</span></h3><div class="desc">설정·경로·파일·워크트리 변화 감지</div><div class="chips"><span class="chip off">ConfigChange</span><span class="chip off">CwdChanged <span class="new">NEW</span></span><span class="chip off">FileChanged <span class="new">NEW</span></span><span class="chip off">WorktreeCreate</span><span class="chip off">WorktreeRemove</span></div></div>
+        <div class="group"><h3>⑧ MCP 연동<span class="count">2</span></h3><div class="desc">MCP 서버의 사용자 입력 요청 가로채기</div><div class="chips"><span class="chip off">Elicitation <span class="new">NEW</span></span><span class="chip off">ElicitationResult <span class="new">NEW</span></span></div></div>
+        <div class="group"><h3>⑨ 표시·알림<span class="count">2</span></h3><div class="desc">알림 발송·메시지 렌더링 개입</div><div class="chips"><span class="chip mine">Notification</span><span class="chip off">MessageDisplay <span class="new">NEW</span></span></div></div>
+      </div>
+      <div class="foot">
+        핸들러 타입 5종: <b>command</b>(async·asyncRewake는 command 전용) · http · prompt · agent(실험) · MCP tool ·
+        차단 시그널은 exit 2 (exit 1은 비차단 주의) · 내 핸들러 9개 = 글로벌 8(Stop 3·PostToolUse 2 포함) + 프로젝트 1(원고 규칙 주입)
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>내 시스템 자동화 지도 — claude -p × 훅 × MCP</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, sans-serif; background: #fff; color: #1e293b; }
+  .wrap { width: 1180px; margin: 0 auto; padding: 36px 40px 44px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .sub { font-size: 14px; color: #64748b; margin: 6px 0 18px; }
+  .legend { display: flex; gap: 14px; font-size: 12px; margin-bottom: 22px; align-items: center; flex-wrap: wrap; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .layer { border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 18px; margin-bottom: 8px; }
+  .layer .cap { font-size: 12px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .between { text-align: center; color: #94a3b8; font-size: 14px; margin: 2px 0 10px; }
+
+  .trig { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tchip { border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; }
+  .tchip small { display: block; font-weight: 500; color: #a16207; font-size: 10.5px; }
+  .tchip.discord { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+  .tchip.discord small { color: #7c3aed; }
+  .tchip.manual { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+  .tchip.manual small { color: #64748b; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .card { border-radius: 12px; padding: 14px 15px; border: 2px solid; }
+  .card.resume { border-color: #8b5cf6; background: #f5f3ff; }
+  .card.stateless { border-color: #10b981; background: #ecfdf5; }
+  .card h3 { font-size: 14.5px; font-weight: 800; margin-bottom: 2px; }
+  .card .tag { font-size: 10px; font-weight: 800; border-radius: 4px; padding: 2px 6px; color: #fff; display: inline-block; margin-bottom: 8px; }
+  .card.resume .tag { background: #8b5cf6; }
+  .card.stateless .tag { background: #10b981; }
+  .card code { font-size: 10.5px; background: #1e293b; color: #a5f3fc; border-radius: 6px; padding: 6px 8px; display: block; margin: 6px 0 8px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+  .card ul { list-style: none; font-size: 11.5px; color: #475569; line-height: 1.65; }
+  .card ul li::before { content: "· "; color: #94a3b8; }
+  .minor { display: flex; gap: 8px; margin-top: 10px; }
+  .mcard { flex: 1; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 9px 12px; font-size: 11.5px; color: #64748b; background: #fafafa; }
+  .mcard b { color: #475569; font-size: 12px; }
+
+  .fx { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .fxg { border-radius: 10px; padding: 11px 13px; font-size: 11.5px; line-height: 1.7; }
+  .fxg.hook { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .fxg.mcp { background: #fdf2f8; border: 1px solid #fbcfe8; }
+  .fxg.out { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .fxg b { display: block; font-size: 12px; margin-bottom: 4px; color: #334155; }
+  .foot { margin-top: 18px; font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap" id="capture">
+  <h1>내 시스템 자동화 지도 — claude -p × 훅 × MCP 실측</h1>
+  <div class="sub">비대화형 대표 3사례 (2026-07-19 전수 조사 기준) · 세션 전략 색 구분</div>
+  <div class="legend">
+    <span><span class="dot" style="background:#8b5cf6"></span>세션 지속 (--session-id → --resume)</span>
+    <span><span class="dot" style="background:#10b981"></span>무상태 (매 실행 새 프로세스, 상태는 git·DB·파일로 승계)</span>
+  </div>
+
+  <div class="layer">
+    <div class="cap">① 트리거층 — 무엇이 claude -p를 깨우는가</div>
+    <div class="trig">
+      <span class="tchip discord">Discord 멘션 @클로드일꾼<small>스레드 1개 = 작업 1건 (listener 상시)</small></span>
+      <span class="tchip manual">/handoff 수동 위임<small>맥북 → ssh + nohup</small></span>
+      <span class="tchip">launchd 01:50 (맥미니)<small>보드게임 야간 파이프라인</small></span>
+      <span class="tchip">launchd 월 07:10 (맥북)<small>Threads 주간 문체 코치</small></span>
+      <span class="tchip">launchd 60초 폴링 (맥미니)<small>knu 판정 워커</small></span>
+      <span class="tchip">launchd 매일 07:00 (맥북)<small>OAuth 프리웜</small></span>
+    </div>
+  </div>
+  <div class="between">↓</div>
+
+  <div class="layer">
+    <div class="cap">② 실행층 — 비대화형 claude -p 대표 3사례</div>
+    <div class="cards">
+      <div class="card resume">
+        <h3>맥미니 핸드오프</h3>
+        <span class="tag">세션 지속 · 유일한 --resume 사용처</span>
+        <code>claude -p "$(cat $SRC)" --session-id $SID
+# 후속 지시:
+claude -p ... --resume $SID
+  --permission-mode bypassPermissions</code>
+        <ul>
+          <li>최초 턴에 uuidgen으로 세션 발급</li>
+          <li>스레드=세션 매핑을 ~/.handoff/threads/*.json으로 앱 레벨 관리</li>
+          <li>상시 프로세스 없음 — 턴마다 종료, 맥락은 세션 파일이 승계</li>
+          <li>유휴 30분이면 ✅ 마킹 후 매핑 삭제</li>
+        </ul>
+      </div>
+      <div class="card stateless">
+        <h3>보드게임 야간 파이프라인</h3>
+        <span class="tag">무상태 · 상태는 git 커밋으로 승계</span>
+        <code>claude -p "$(cat nightly/brief.md)"
+  --permission-mode bypassPermissions
+# perl alarm 16800초 백스톱</code>
+        <ul>
+          <li>후보 평가 → MVP 증분 개발 → 3축 자체평가</li>
+          <li>리포트·Discord 카드 → git push</li>
+          <li>매일 새 프로세스 — 어제 작업은 git 로그가 기억</li>
+        </ul>
+      </div>
+      <div class="card stateless">
+        <h3>Threads 주간 문체 코치</h3>
+        <span class="tag">무상태 · 도구 전면 차단</span>
+        <code>claude -p --model ... --tools ""
+  --output-format text
+# 프롬프트는 stdin 주입</code>
+        <ul>
+          <li>지난주 발행글 문체 진단(JSON) → Discord 카드</li>
+          <li>--tools ""로 순수 텍스트 분류기로만 사용</li>
+          <li>파일·셸 접근 자체가 불가능한 최소권한 형태</li>
+        </ul>
+      </div>
+    </div>
+    <div class="minor">
+      <div class="mcard"><b>knu 판정 워커</b> — 60초 폴링, Supabase row → claude -p 판정 → gws 메일 발송 (무상태)</div>
+      <div class="mcard"><b>listener LLM fallback</b> — 자연어 리포명을 haiku로 유추 (결정적 매칭 실패 시만)</div>
+      <div class="mcard"><b>OAuth 프리웜</b> — claude -p "hi" 최소 호출로 5시간 윈도 워밍업</div>
+    </div>
+  </div>
+  <div class="between">↓ 세션이 흐르는 동안 · 끝날 때</div>
+
+  <div class="layer">
+    <div class="cap">③ 부수효과층 — 훅·MCP·산출물</div>
+    <div class="fx">
+      <div class="fxg hook"><b>훅 (이벤트 5종 · 핸들러 9개)</b>
+        UserPromptSubmit 사업 넛지 · PreToolUse 토큰 사전경고 · PostToolUse tsc / 서브에이전트 실변경 검증 · Stop ×3 async (Obsidian·캘린더·업무일지) · Notification macOS 알림 · (프로젝트) 원고 규칙 주입</div>
+      <div class="fxg mcp"><b>MCP (user 5 + fallback 1)</b>
+        hermes-discord (ssh 경유 맥미니) · notion · playwright · n8n-mcp ×2 (동일 바이너리, URL만 다름 → n8n-route 스킬로 라우팅) · obsidian (전역 fallback)</div>
+      <div class="fxg out"><b>산출물</b>
+        Discord 카드·스레드 응답 · Google Calendar Worklog · Obsidian 세션로그·업무일지 · git push (Pages 재빌드) · 판정 메일(HTML)</div>
+    </div>
+  </div>
+
+  <div class="foot">공통 패턴: 훅은 전부 차단이 아닌 "주입·경고형" · headless는 bypassPermissions와 --tools "" 양극단만 존재 (--allowedTools 미사용) · --continue 실사용 0건</div>
+</div>
+</body>
+</html>
