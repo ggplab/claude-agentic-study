@@ -40,7 +40,19 @@
 3. **실패 체크리스트** — 이번 사고부터 위키에 쌓고, 자기수정 프롬프트가 반드시 읽게 한다.
 4. **코드 지도** — 스크립트들의 역할·의존관계를 적은 문서 하나. Repomix로 초안을 뽑으면 된다.
 
-## 4. MoAI를 그냥 깔면 안 되나
+## 4. 코딩을 위임할 때 바로 쓸 수 있는 것들 (Codex 기준)
+
+헤르메스는 코딩을 Codex CLI에 위임하니까, 클로드 코드 전용 플러그인 말고 Codex에서도 되는 것들을 찾아봤다. 전부 설치가 명령 한 줄이거나 설정 파일 하나 수준이다.
+
+- **Codex 자체 설정** — `~/.codex/config.toml`에 [승인 정책과 샌드박스](https://developers.openai.com/codex/cli)를 정할 수 있다. `sandbox_mode = "workspace-write"`로 두면 작업 폴더 밖은 못 건드린다. 설치할 것도 없이 설정 두 줄이다.
+- **[AGENTS.md](https://agents.md/)** — 도구 불문 규칙 파일 표준. 클로드 코드의 CLAUDE.md 같은 걸 Codex·Cursor 등 어디서나 읽게 한 것이다. Codex가 네이티브로 지원한다. 규칙 내용은 [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) 모음에서 스택 맞는 걸 복붙하면 된다.
+- **[pre-commit](https://pre-commit.com)** — `pip install pre-commit` 후 설정 파일 하나. 시크릿 커밋, main 직접 커밋, 검사 실패 코드를 커밋 시점에 기계로 막는다. 에이전트가 뭘 쓰든 git 수준에서 걸린다.
+- **[ckpt](https://github.com/mohshomis/ckpt)** — `ckpt watch`를 켜두면 에이전트가 작업하는 동안 자동으로 스냅샷을 찍고, 잘못되면 `ckpt restore`로 되돌린다. 내가 만들려는 "저장→수정→실패 시 복원"을 도구로 해주는 것. Codex·클로드 코드 불문. (설치 명령은 리포에서 직접 확인 필요)
+- **[Repomix](https://github.com/yamadashy/repomix)** — `npx repomix` 한 줄로 레포 전체를 텍스트 한 파일로 묶는다. 출력이 그냥 텍스트라 Codex 세션 첫 컨텍스트로 바로 넣을 수 있다.
+
+적용 순서로 치면: Codex 설정 두 줄 → AGENTS.md 하나 → pre-commit → ckpt → (큰 레포면) Repomix. 참고로 Gemini CLI는 파일 수정 전 자동 스냅샷이 내장인데 Codex엔 없어서, 스냅샷은 ckpt 같은 걸 따로 얹어야 한다.
+
+## 5. MoAI를 그냥 깔면 안 되나
 
 안 된다. MoAI는 개발자가 클로드 코드로 코딩할 때 쓰는 하네스라, 헤르메스가 런타임에 스스로를 고치는 경로엔 끼어들 자리가 없다. 헤르메스 크론의 provider도 GPT라 클로드 코드 전용인 MoAI와 결합되지 않는다. 필요한 건 위 1·2번 정도로 작다. MoAI를 까는 게 아니라 그 발상을 옮겨 심는 것이다.
 
