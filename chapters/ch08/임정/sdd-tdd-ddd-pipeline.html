@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SDD → TDD/DDD → TRUST 5 — plan·run·sync 파이프라인과 게이트 두 겹</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, sans-serif; background: #fff; color: #1e293b; }
+  .wrap { width: 1180px; margin: 0 auto; padding: 36px 40px 40px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .sub { font-size: 14px; color: #64748b; margin-top: 6px; }
+  .legend { display: flex; gap: 16px; margin: 16px 0 22px; font-size: 12px; align-items: center; flex-wrap: wrap; }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 26px; height: 13px; border-radius: 4px; display: inline-block; }
+  .sw.hard { background: #dcfce7; border: 2px solid #16a34a; }
+  .sw.soft { background: #fef9c3; border: 2px dashed #ca8a04; }
+  .sw.v3 { background: #fff; border: 2px dotted #f97316; }
+
+  /* 파이프라인 */
+  .pipe { display: grid; grid-template-columns: 1fr 62px 1.55fr 42px 1fr; align-items: stretch; gap: 0; }
+  .stage { border: 2px solid #cbd5e1; border-radius: 13px; background: #f8fafc; padding: 13px 15px; }
+  .stage.run { border-color: #2563eb; background: #f5f9ff; }
+  .stage .cmd { font-family: ui-monospace, Menlo, monospace; font-size: 14.5px; font-weight: 800; color: #1e293b; }
+  .stage .budget { float: right; font-size: 11px; font-weight: 800; color: #fff; background: #64748b; border-radius: 10px; padding: 2px 9px; }
+  .stage.run .budget { background: #2563eb; }
+  .stage .what { font-size: 12px; color: #475569; margin-top: 8px; line-height: 1.5; }
+  .stage .who { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+  .stage .out { margin-top: 9px; border-top: 1px dashed #cbd5e1; padding-top: 7px; font-size: 11px; color: #64748b; }
+  .stage .out b { color: #334155; }
+
+  .conn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+  .conn .ar { font-size: 20px; color: #94a3b8; }
+  .clear { font-size: 10px; font-weight: 800; color: #b91c1c; background: #fee2e2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 3px 6px; text-align: center; line-height: 1.35; }
+
+  /* run 내부 분기 */
+  .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+  .bx { border-radius: 9px; padding: 8px 10px; background: #fff; border: 1.5px solid #93c5fd; }
+  .bx.ddd { border-color: #c4b5fd; }
+  .bx .cond { font-size: 10px; font-weight: 800; color: #64748b; background: #f1f5f9; border-radius: 5px; padding: 2px 6px; display: inline-block; }
+  .bx .name { font-size: 12.5px; font-weight: 800; margin: 5px 0 3px; color: #1d4ed8; }
+  .bx.ddd .name { color: #6d28d9; }
+  .bx .cyc { font-size: 10.5px; color: #475569; line-height: 1.5; }
+  .bx .plain { font-size: 10px; color: #94a3b8; margin-top: 4px; line-height: 1.4; }
+
+  /* TRUST 게이트 */
+  .gates { margin-top: 24px; }
+  .gates h2 { font-size: 15px; font-weight: 800; color: #334155; margin-bottom: 4px; }
+  .gates .note { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+  .grow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .g { border-radius: 11px; padding: 11px 12px; }
+  .g.hard { background: #f0fdf4; border: 2px solid #16a34a; }
+  .g.soft { background: #fefce8; border: 2px dashed #ca8a04; }
+  .g .l { font-size: 20px; font-weight: 900; line-height: 1; }
+  .g.hard .l { color: #16a34a; }
+  .g.soft .l { color: #ca8a04; }
+  .g .n { font-size: 12.5px; font-weight: 800; margin: 4px 0 5px; color: #1e293b; }
+  .g .d { font-size: 10.5px; color: #475569; line-height: 1.5; }
+  .g .verdict { margin-top: 7px; font-size: 10px; font-weight: 800; border-radius: 5px; padding: 2px 6px; display: inline-block; }
+  .g.hard .verdict { background: #16a34a; color: #fff; }
+  .g.soft .verdict { background: #ca8a04; color: #fff; }
+
+  .keyfind { margin-top: 16px; border: 2px solid #ca8a04; background: #fefce8; border-radius: 11px; padding: 12px 15px; }
+  .keyfind .t { font-size: 13px; font-weight: 800; color: #854d0e; margin-bottom: 5px; }
+  .keyfind .b { font-size: 12px; color: #713f12; line-height: 1.65; }
+  .keyfind code { background: #fef3c7; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
+  .v3row { margin-top: 16px; border: 2px dotted #f97316; border-radius: 11px; padding: 11px 15px; background: #fffbf5; }
+  .v3row .t { font-size: 12.5px; font-weight: 800; color: #c2410c; margin-bottom: 6px; }
+  .v3chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .v3chip { font-size: 11px; background: #fff; border: 1.5px solid #fdba74; border-radius: 7px; padding: 4px 9px; color: #7c2d12; }
+
+  /* 추적성 */
+  .trace { margin-top: 18px; border-top: 1px dashed #e2e8f0; padding-top: 13px; }
+  .trace .t { font-size: 12.5px; font-weight: 800; color: #334155; margin-bottom: 8px; }
+  .tline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11.5px; }
+  .tnode { background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 7px; padding: 4px 10px; color: #475569; }
+  .tarr { color: #94a3b8; }
+  .dead { text-decoration: line-through; opacity: 0.5; }
+
+  .foot { margin-top: 18px; font-size: 11.5px; color: #94a3b8; line-height: 1.7; border-top: 1px dashed #e2e8f0; padding-top: 11px; }
+  .foot b { color: #64748b; }
+  code { font-family: ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="wrap" id="capture">
+  <h1>SDD → TDD / DDD → TRUST 5 — 그런데 "강제"는 두 겹이었다</h1>
+  <div class="sub">명세 먼저 쓰고(SDD) → 테스트 먼저 구현하거나(TDD) 행위 보존 리팩터링(DDD) → 5개 품질 관문 통과 &nbsp;·&nbsp; 기준: <b>v2.14.0</b>(책 시점, 2026-04-24), 점선은 v3.0.1 추가분</div>
+  <div class="legend">
+    <span class="key"><span class="sw hard"></span> <b>기계가 실제로 막음</b> (실패 시 exit·턴 차단)</span>
+    <span class="key"><span class="sw soft"></span> <b>지시문·설정뿐</b> (프롬프트 수준, 기계 강제 없음)</span>
+    <span class="key"><span class="sw v3"></span> v3.0.1에서 추가 — 책 출간 이후</span>
+  </div>
+
+  <div class="pipe">
+    <div class="stage">
+      <span class="budget">30K</span>
+      <span class="cmd">/moai plan</span>
+      <div class="what"><b>명세 주도 개발(SDD)</b> — 코드보다 명세가 먼저. 요구사항을 EARS 정형 문법(When/While/Where…)으로 고정</div>
+      <div class="who">manager-spec + plan-auditor <span style="color:#cbd5e1">|</span> 작성자·감사자 분리</div>
+      <div class="out"><b>산출</b> <code>.moai/specs/SPEC-{도메인}-{번호}/</code><br>최소 3파일 — spec.md · plan.md · acceptance.md</div>
+    </div>
+
+    <div class="conn"><div class="ar">▶</div><div class="clear">/clear<br>의무</div><div style="font-size:9.5px;color:#94a3b8;text-align:center;line-height:1.3">컨텍스트<br>절단점</div></div>
+
+    <div class="stage run">
+      <span class="budget">180K</span>
+      <span class="cmd">/moai run</span>
+      <div class="what">SPEC을 구현. <b>기존 코드 유무·커버리지에 따라 두 갈래로 갈린다</b></div>
+      <div class="branch">
+        <div class="bx">
+          <span class="cond">신규 · 커버리지 ≥ 10%</span>
+          <div class="name">TDD — 테스트 주도 개발</div>
+          <div class="cyc"><b>RED</b> 실패 테스트 먼저 → <b>GREEN</b> 통과할 만큼만 → <b>REFACTOR</b> 정리</div>
+          <div class="plain">🧩 채점 기준표를 먼저 만들고 답안을 쓴다</div>
+        </div>
+        <div class="bx ddd">
+          <span class="cond">기존 코드 · 커버리지 &lt; 10%</span>
+          <div class="name">DDD — Domain-Driven <u>Development</u></div>
+          <div class="cyc"><b>ANALYZE</b> 현 행위 파악 → <b>PRESERVE</b> 특성 테스트로 스냅샷 → <b>IMPROVE</b> 행위 보존 개선</div>
+          <div class="plain">🧩 이사 전 집 안을 다 찍어두고, 가구 재배치 후 사진과 대조</div>
+        </div>
+      </div>
+      <div class="out" style="margin-top:9px"><b>⚠ DDD는 Evans식 Domain-Driven <u>Design</u>이 아니다</b> — 같은 약어, 다른 개념</div>
+    </div>
+
+    <div class="conn"><div class="ar">▶</div></div>
+
+    <div class="stage">
+      <span class="budget">40K</span>
+      <span class="cmd">/moai sync</span>
+      <div class="what">문서·코드맵을 코드 실제 상태에 맞춰 동기화</div>
+      <div class="who">manager-docs</div>
+      <div class="out"><b>산출</b> 갱신된 문서 · codemaps<br>PR 자동 생성은 <b>Route B 한정</b>(v3.0.1)</div>
+    </div>
+  </div>
+
+  <div class="gates">
+    <h2>TRUST 5 품질 관문 — 5개 중 <span style="color:#16a34a">기계가 막는 건 2개</span>, <span style="color:#ca8a04">나머지 3개는 선언</span></h2>
+    <div class="note">"Gates judge verification, not agents" — 관문이 판정하지, 에이전트가 판정하지 않는다는 것이 설계 의도. 실측하면 의도와 구현에 간극이 있다.</div>
+    <div class="grow">
+      <div class="g soft">
+        <div class="l">T</div>
+        <div class="n">Tested</div>
+        <div class="d">커버리지 85% 이상 · test-first 순서 준수</div>
+        <div class="verdict">지시문뿐</div>
+      </div>
+      <div class="g soft">
+        <div class="l">R</div>
+        <div class="n">Readable</div>
+        <div class="d">가독성 규약 — 에이전트 프롬프트에 서술</div>
+        <div class="verdict">지시문뿐</div>
+      </div>
+      <div class="g hard">
+        <div class="l">U</div>
+        <div class="n">Unified</div>
+        <div class="d">LSP 품질 게이트 — 에러 &gt; 0이면 <code>exit 2</code>로 차단 · ast-grep 구조 검사</div>
+        <div class="verdict">기계 차단</div>
+      </div>
+      <div class="g hard">
+        <div class="l">S</div>
+        <div class="n">Secured</div>
+        <div class="d">정적 분석·시크릿 검사가 도구 계층에서 동작</div>
+        <div class="verdict">기계 차단</div>
+      </div>
+      <div class="g soft">
+        <div class="l">T</div>
+        <div class="n">Trackable</div>
+        <div class="d">SPEC ID 추적 — 규약이지 검사기가 아님</div>
+        <div class="verdict">지시문뿐</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="keyfind">
+    <div class="t">🔍 이 장의 핵심 발견 — README만 봐서는 알 수 없는 것</div>
+    <div class="b">
+      • <b>v2.14.0의 'TDD 강제'는 기계가 아니라 프롬프트였다.</b> 훅 핸들러 <code>tdd_handler.go</code>는 <code>// TODO</code> 주석만 있는 <b>미구현 스텁</b> — 무엇을 넣어도 무조건 통과<br>
+      • <b>커버리지 85%도 게이트가 아니다.</b> CI는 Codecov에 업로드만 하고 임계 미달 시 실패시키지 않음<br>
+      • 즉 "우리는 TDD를 강제한다"와 "기계가 TDD를 막아준다"는 다른 말. 기계 게이트 다층화는 <b>v3의 일</b>이었다
+    </div>
+  </div>
+
+  <div class="v3row">
+    <div class="t">v3.0.1에서 추가된 기계 차단 (책 출간 이후)</div>
+    <div class="v3chips">
+      <span class="v3chip"><code>moai spec lint</code> — frontmatter 12필드 · GEARS 문법 검사</span>
+      <span class="v3chip">Stop 훅 sync 게이트 — compile/vet 실패 시 <b>턴 차단</b></span>
+      <span class="v3chip">lefthook pre-push</span>
+      <span class="v3chip">manager-tdd + manager-ddd → <b>manager-develop 통합</b></span>
+    </div>
+  </div>
+
+  <div class="trace">
+    <div class="t">추적성(Trackable)의 실체 — @TAG는 책 출간 <b>6개월 전</b>에 이미 제거됐다</div>
+    <div class="tline">
+      <span class="tnode dead">@TAG 체인 (@SPEC:ID)</span>
+      <span class="tarr">✕ 2025-11-13 커밋 63ba6ac7d로 완전 제거 — v2.14.0에 문자열 0건</span>
+    </div>
+    <div class="tline" style="margin-top:8px">
+      <span class="tnode">SPEC 문서 내 Traceability 표</span><span class="tarr">→</span>
+      <span class="tnode">커밋 메시지 SPEC ID</span><span class="tarr">→</span>
+      <span class="tnode">코드 주석 <b>@MX</b> (NOTE·WARN·ANCHOR·TODO)</span>
+      <span class="tarr">＋ v3.0.1: @MX:DEBT · <code>moai mx query</code>로 기계 수확</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>EARS → GEARS</b> — 요구사항 정형 문법 표기가 <code>EARS</code>에서 <code>GEARS</code>로 전환된 PR #1046이 <b>책 출간 다음날(2026-05-22) 머지</b>. 즉 EARS는 정확히 '책 시점까지'의 표기<br>
+    <b>명령어 3개는 껍데기</b> — plan/run/sync 각각 7줄짜리 얇은 라우터이고, 실체는 <code>Skill("moai")</code>의 Intent Router(첫 단어 매칭, 서브커맨드 18종). 이름 변천: <code>/alfred:1-spec·2-build·3-sync</code> → <code>1-plan·2-run</code>(2025-10) → <code>/moai:</code>(2025-11) → 번호 없는 <code>plan/run/sync</code>(v2.14.0)<br>
+    <b>TRUST의 U</b> — 문서 정본은 Unified인데 Go 코드(<code>trust.go</code>)는 Understandable로 정의. 문서·코드 불일치가 양 태그 공통
+  </div>
+</div>
+</body>
+</html>

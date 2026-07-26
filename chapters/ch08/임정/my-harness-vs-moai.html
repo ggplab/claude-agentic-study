@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>내 시스템 ↔ MoAI-ADK 5축 대조 — 충족 3 · 공백 2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, sans-serif; background: #fff; color: #1e293b; }
+  .wrap { width: 1180px; margin: 0 auto; padding: 36px 40px 40px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .sub { font-size: 14px; color: #64748b; margin-top: 6px; }
+  .legend { display: flex; gap: 16px; margin: 15px 0 20px; font-size: 12px; align-items: center; flex-wrap: wrap; }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 24px; height: 13px; border-radius: 4px; display: inline-block; }
+  .sw.ok { background: #dcfce7; border: 2px solid #16a34a; }
+  .sw.gap { background: #ffedd5; border: 2px solid #ea580c; }
+
+  .hdr { display: grid; grid-template-columns: 118px 1fr 1fr 96px; gap: 10px; margin-bottom: 8px; }
+  .hdr div { font-size: 12px; font-weight: 800; color: #64748b; text-align: center; padding: 6px; border-radius: 7px; background: #f1f5f9; }
+  .hdr .moai { background: #fff7ed; color: #c2410c; }
+  .hdr .mine { background: #eff6ff; color: #1d4ed8; }
+
+  .row { display: grid; grid-template-columns: 118px 1fr 1fr 96px; gap: 10px; margin-bottom: 9px; align-items: stretch; }
+  .axis { border-radius: 10px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .axis .n { font-size: 19px; font-weight: 900; line-height: 1; }
+  .axis .t { font-size: 11.5px; font-weight: 800; margin-top: 5px; line-height: 1.35; }
+  .cell { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 11px; font-size: 11.5px; line-height: 1.55; color: #475569; background: #fff; }
+  .cell.m { border-color: #fed7aa; background: #fffbf5; }
+  .cell.y { border-color: #bfdbfe; background: #f8fbff; }
+  .cell b { color: #1e293b; }
+  .cell .tag { font-size: 9.5px; font-weight: 800; border-radius: 4px; padding: 1px 5px; margin-left: 3px; }
+  .tag.v2 { background: #e2e8f0; color: #475569; }
+  .tag.v3 { background: #fed7aa; color: #9a3412; }
+  .verd { border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; }
+  .verd .v { font-size: 13px; font-weight: 900; }
+  .verd .s { font-size: 9.5px; margin-top: 3px; text-align: center; line-height: 1.3; }
+
+  .ok  { background: #f0fdf4; border: 2px solid #16a34a; }
+  .ok .n, .ok .v { color: #15803d; }
+  .ok .t, .ok .s { color: #166534; }
+  .gap { background: #fff7ed; border: 2px solid #ea580c; }
+  .gap .n, .gap .v { color: #c2410c; }
+  .gap .t, .gap .s { color: #9a3412; }
+
+  .flip { font-size: 10.5px; font-weight: 800; color: #1d4ed8; background: #dbeafe; border: 1.5px solid #93c5fd; border-radius: 6px; padding: 3px 7px; display: inline-block; margin-top: 5px; }
+
+  /* 화살표 → 제안 */
+  .bridge { margin-top: 22px; display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; }
+  .gapbox { border: 2px solid #ea580c; border-radius: 12px; background: #fff7ed; padding: 12px 13px; }
+  .gapbox .t { font-size: 12.5px; font-weight: 800; color: #9a3412; margin-bottom: 8px; }
+  .gapitem { font-size: 11px; color: #7c2d12; background: #fff; border: 1.5px solid #fed7aa; border-radius: 7px; padding: 6px 9px; margin-bottom: 6px; line-height: 1.45; }
+  .props { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+  .prop { border: 2px solid #16a34a; border-radius: 12px; padding: 11px 13px; background: #f0fdf4; }
+  .prop .num { font-size: 10px; font-weight: 900; color: #fff; background: #16a34a; border-radius: 20px; width: 19px; height: 19px; display: inline-flex; align-items: center; justify-content: center; }
+  .prop .nm { font-size: 12.5px; font-weight: 800; color: #14532d; margin: 6px 0 5px; line-height: 1.35; }
+  .prop .dd { font-size: 10.5px; color: #166534; line-height: 1.55; }
+  .prop .warn { margin-top: 7px; font-size: 10px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 5px 7px; line-height: 1.45; }
+  .prop .ax { font-size: 9.5px; font-weight: 800; color: #16a34a; background: #dcfce7; border-radius: 4px; padding: 1px 5px; }
+
+  /* 충돌 띠 */
+  .clash { margin-top: 20px; border: 2px solid #dc2626; border-radius: 12px; background: #fef2f2; padding: 12px 15px; }
+  .clash .t { font-size: 13px; font-weight: 800; color: #991b1b; margin-bottom: 8px; }
+  .clashrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .ci { background: #fff; border: 1.5px solid #fecaca; border-radius: 8px; padding: 8px 10px; font-size: 10.5px; color: #7f1d1d; line-height: 1.55; }
+  .ci b { display: block; font-size: 11.5px; color: #991b1b; margin-bottom: 3px; }
+
+  .foot { margin-top: 18px; font-size: 11.5px; color: #94a3b8; line-height: 1.7; border-top: 1px dashed #e2e8f0; padding-top: 11px; }
+  .foot b { color: #64748b; }
+  code { font-family: ui-monospace, Menlo, monospace; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 10.5px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="capture">
+  <h1>내 시스템에도 이미 하네스가 있었다 — 5축 대조 결과 충족 3 · 공백 2</h1>
+  <div class="sub">전제: 나는 개발 전업이 아니라 <b>교육·콘텐츠·자동화 운영</b>이 주업 → MoAI 5축을 그대로 이식하는 게 아니라 <b>도메인 등가물</b>을 찾는 관점 &nbsp;·&nbsp; 내 환경 실측일 2026-07-26</div>
+  <div class="legend">
+    <span class="key"><span class="sw ok"></span> <b>충족</b> — 형태는 달라도 같은 일을 하는 장치가 이미 있음</span>
+    <span class="key"><span class="sw gap"></span> <b>공백</b> — 대응물 없음</span>
+    <span style="color:#94a3b8">MoAI 열의 <span class="tag v2">v2.14.0</span> <span class="tag v3">v3.0.1</span> 는 근거 태그</span>
+  </div>
+
+  <div class="hdr">
+    <div>하네스 5축</div>
+    <div class="moai">MoAI-ADK</div>
+    <div class="mine">내 시스템 (실측)</div>
+    <div>판정</div>
+  </div>
+
+  <div class="row">
+    <div class="axis ok"><div class="n">①</div><div class="t">명세 · 계획</div></div>
+    <div class="cell m">manager-spec + plan-auditor(감사자 분리) · "3+ 파일 분할" <b>[HARD]</b> 규칙 <span class="tag v3">v3.0.1</span><br>산출물 = <code>SPEC-{도메인}-{번호}/</code> 3파일</div>
+    <div class="cell y"><code>behavior.md</code> — 비자명 작업 시 <b>Fable 교차검토 의무</b> + 계획 승인 대기 + Dry-run 규칙<br>▶ 발동 임계값이 <b>"파일 3개 이상"으로 MoAI와 동일</b> (우연의 일치)</div>
+    <div class="verd ok"><div class="v">충족</div><div class="s">산출물(SPEC<br>문서)만 없음</div></div>
+  </div>
+
+  <div class="row">
+    <div class="axis gap"><div class="n">②</div><div class="t">품질 게이트</div></div>
+    <div class="cell m">LSP 게이트 — 에러&gt;0이면 <code>exit 2</code> <span class="tag v2">v2.14.0</span><br>Stop 훅 sync 게이트 · lefthook pre-push <span class="tag v3">v3.0.1</span></div>
+    <div class="cell y">훅 <b>10개 전부 주입·경고·기록형</b> — <b style="color:#c2410c">차단형 0개</b><br>기계가 막는 건 <code>permissions.deny</code> 21항목뿐</div>
+    <div class="verd gap"><div class="v">공백</div><div class="s">차단형<br>게이트</div></div>
+  </div>
+
+  <div class="row">
+    <div class="axis ok"><div class="n">③</div><div class="t">역할 분업<br>· 라우팅</div></div>
+    <div class="cell m"><code>delegation.yaml</code> · Tier × Phase 배정 매트릭스 <span class="tag v3">v3.0.1</span><br>라우팅 범위 = 클로드 코드 내부</div>
+    <div class="cell y">에이전트 6종 전원 sonnet 고정 + 메인 <code>opus[1m]</code> + <b>Codex 위임 규칙</b><br>▶ <b>Claude 외부까지 라우팅</b> — 범위는 내 쪽이 더 넓음</div>
+    <div class="verd ok"><div class="v">충족</div><div class="s">범위는<br>내 쪽이 넓음</div></div>
+  </div>
+
+  <div class="row">
+    <div class="axis ok"><div class="n">④</div><div class="t">문서 동기화<br>· GC</div></div>
+    <div class="cell m"><code>/moai clean</code> · codemaps · <code>/moai sync</code> <span class="tag v2">v2.14.0</span><br>▶ <b>명령형</b> — 사용자가 쳐야 돈다</div>
+    <div class="cell y">launchd 자동 잡 — 인덱스 push(매일 08:40) · 월간 클린업 · 거버넌스 리포트 + GitHub Actions 자동 재빌드<br><span class="flip">▲ 역전 — cron성 자동 실행이라 이 축은 내 쪽이 더 기계적</span></div>
+    <div class="verd ok"><div class="v">충족</div><div class="s">내 쪽이<br>더 자동</div></div>
+  </div>
+
+  <div class="row">
+    <div class="axis gap"><div class="n">⑤</div><div class="t">추적성</div></div>
+    <div class="cell m">SPEC 내 Traceability 표 + 커밋 SPEC ID + 코드 주석 <b>@MX</b> <span class="tag v2">v2.14.0</span><br>+ <code>moai mx query</code> 기계 수확 <span class="tag v3">v3.0.1</span></div>
+    <div class="cell y"><b>세션 단위만 완비</b> — <code>session_id</code> → Calendar · Obsidian · 업무일지 3방향 연결<br>▶ <b style="color:#c2410c">요구 → 산출물 방향 관통 ID 없음</b></div>
+    <div class="verd gap"><div class="v">공백</div><div class="s">산출물<br>방향</div></div>
+  </div>
+
+  <div class="bridge">
+    <div class="gapbox">
+      <div class="t">공백 2곳 ▼</div>
+      <div class="gapitem"><b>② 차단형 게이트 없음</b><br>규칙은 많은데 기계가 막는 건 permissions뿐</div>
+      <div class="gapitem"><b>⑤ 산출물 방향 추적 없음</b><br>"이 콘텐츠의 근거 리서치가 무엇인가"가 대화 밖에 안 남음</div>
+      <div style="font-size:10.5px;color:#9a3412;margin-top:8px;line-height:1.5">▶ 전체 이식이 아니라 <b>도메인 치환</b>으로 메운다</div>
+    </div>
+
+    <div class="props">
+      <div class="prop">
+        <span class="num">1</span> <span class="ax">②축</span>
+        <div class="nm">hookify 도메인 게이트 2개</div>
+        <div class="dd">(a) 공유 산출물에 <b>내부 사업자명</b> 노출 시 차단<br>(b) Pages 프로젝트 커밋 전 <code>npm run build</code> 실패 시 차단</div>
+        <div class="warn">⚠ (a)는 <b>강의교안 예외 필수</b> — 카피라이트 규칙상 강의교안에는 그 표기가 허용돼, 무조건 차단이면 오탐. 경로·문서유형 예외 조건을 먼저 설계</div>
+      </div>
+      <div class="prop">
+        <span class="num">2</span> <span class="ax">②축</span>
+        <div class="nm">headless 잡 예산 래퍼<br><span style="font-weight:600;font-size:10.5px">(서킷브레이커의 launchd판)</span></div>
+        <div class="dd">무인 <code>claude -p</code> 잡 공통 래퍼 — <code>--max-turns</code> 상한 + 소요·출력 로그 적재 + 임계 초과 시 Discord 통지 후 kill</div>
+        <div class="warn">⚠ 모델은 <b>잡 성격별 분기</b> — 수집·실행형만 sonnet, monthly-cleanup 같은 판단형 잡은 상위 모델 유지</div>
+      </div>
+      <div class="prop">
+        <span class="num">3</span> <span class="ax">①⑤축</span>
+        <div class="nm">acceptance.md 1파일 규격<br><span style="font-weight:600;font-size:10.5px">(SPEC 3파일의 경량판)</span></div>
+        <div class="dd">건별 프로젝트에 2섹션만 — ① 완료 판정 기준(verify 패턴) ② 원천 리서치 경로. 커밋 메시지에 경로 기입 = Traceability의 도메인 등가물</div>
+        <div class="warn">⚠ EARS/GEARS 문법·lint는 도입 안 함 — 검증 주체가 기계가 아니라 verify를 수행하는 Claude 자신</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="clash">
+    <div class="t">🚫 그럼 <code>moai init</code>을 통째로 깔면? — 충돌 3종 <span style="font-weight:600;font-size:11px;color:#b91c1c">(정적 대조, v3.0.1 템플릿 실측 · 실기동 미검증)</span></div>
+    <div class="clashrow">
+      <div class="ci"><b>① 지시문 충돌</b>템플릿 CLAUDE.md의 "You are Master Agent MoAI" + <code>[ZONE:Frozen][HARD]</code> AskUserQuestion-Only ↔ 내 behavior.md의 "텍스트로 A안/B안 분기 제시". 프로젝트·유저 scope가 동시 로드돼 <b>비결정적으로 혼합</b></div>
+      <div class="ci"><b>② 훅 적층</b>템플릿이 이벤트 9종·훅 35개를 등록 — 내 글로벌과 <b>이벤트 5종이 중복</b>. Stop에서 내 async 기록 3종 위에 MoAI 차단형 게이트가 얹히는데 <b>실행 순서가 미정의</b></div>
+      <div class="ci"><b>③ git·컨텍스트 철학 역행</b>Route A는 main 직행 자동 커밋(PR은 Route B 한정) ↔ 내 규칙 "커밋은 사용자가 요청할 때만". rules 대량 상시 주입 ↔ 내가 <code>paths:</code>로 다이어트한 방향과 정반대</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>내 시스템의 고유 강점 2가지</b> — ① 라우팅이 Claude 안에 갇히지 않음(Codex 위임까지 규칙화) ② 하네스가 OS층(launchd)에 걸려 있어 <b>사람이 자리에 없어도 돈다</b>. MoAI의 ④축이 명령형인 것과 대비<br>
+    <b>실측 한계</b> — 맥미니 쪽 하네스는 원격 미실측(AGENT_GUIDE 기재 기준) · MoAI 훅과 내 훅의 병합 실행 순서는 정적 대조만 수행
+  </div>
+</div>
+</body>
+</html>
