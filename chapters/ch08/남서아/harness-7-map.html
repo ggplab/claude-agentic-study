@@ -21,14 +21,14 @@
 </head>
 <body>
   <h1>하네스 7요소 지도 — MoAI 밖의 구현들, 그리고 헤르메스</h1>
-  <div class="sub">ch08 하네스 엔지니어링 · 요소별 대표 오픈소스(★=GitHub API 실측) × 헤르메스 킷 실측 · 남서아</div>
+  <div class="sub">ch08 하네스 엔지니어링 · 요소별 대표 오픈소스(★=GitHub API 조회) × 헤르메스 킷 확인 결과 · 남서아</div>
 
   <table>
     <tr><th>요소</th><th>대표 구현 (MoAI-ADK 외)</th><th>헤르메스 현재 (실측)</th><th>상태</th><th>적용안</th></tr>
     <tr>
       <td>① 자기검증 루프</td>
-      <td class="repo">OpenHands 82k★ (실행-관찰-수정 루프) · Aider 48k★ (auto-lint/test 반복) · Reflexion (학술 원형)</td>
-      <td>smoke_test.py·kit-doctor.py 있으나 사람이 돌려야 함. 자기수정 경로엔 미연결</td>
+      <td class="repo">Aider 48k★ (고칠 때마다 자동 테스트, 에러 나면 스스로 재수정) · OpenHands 82k★ (실행→관찰→수정 반복) · Reflexion (학술 원형)</td>
+      <td>점검 스크립트(smoke_test.py)는 있으나 사람이 돌려야 함. 자기수정 경로엔 미연결</td>
       <td><span class="chip gap">공백</span></td>
       <td><b>1순위</b> — 자기수정 시 git 스냅샷 → 수정 → smoke_test → 실패 시 자동 롤백</td>
     </tr>
@@ -42,9 +42,9 @@
     <tr>
       <td>③ 세션 지속성</td>
       <td class="repo">Cline Memory Bank 65k★ · Mem0 62k★ · Letta(MemGPT) 24k★</td>
-      <td>위키 세컨브레인 + log.md + 출처 기록 — 이미 핵심 기능</td>
-      <td><span class="chip ok">있음</span></td>
-      <td>유지</td>
+      <td>위키 세컨브레인 + log.md + 출처 기록 — 단 구직 업무용이지 코딩 작업용 아님</td>
+      <td><span class="chip part">업무용</span></td>
+      <td>유지 (코딩엔 별도 불필요)</td>
     </tr>
     <tr>
       <td>④ 실패 체크리스트</td>
@@ -63,20 +63,20 @@
     <tr>
       <td>⑥ 가비지 컬렉션</td>
       <td class="repo">전용 레포 없음. 인접: Knip 12k★ · Vulture (데드코드) · Letta (컨텍스트 축출)</td>
-      <td>job-notes-cleanup.py · dedup-postings.py — 도메인 GC 이미 동작</td>
-      <td><span class="chip ok">있음</span></td>
-      <td>tmp/로그로 범위만 확장</td>
+      <td>job-notes-cleanup.py · dedup-postings.py — 구직 노트 청소용이지 코드 청소 아님</td>
+      <td><span class="chip part">업무용</span></td>
+      <td>코드 청소가 필요해지면 Vulture(파이썬용)</td>
     </tr>
     <tr>
       <td>⑦ 스캐폴딩 우선</td>
       <td class="repo">Spec Kit 124k★ (요소 최대) · BMAD-METHOD 51k★ · cookiecutter 25k★ (원조)</td>
-      <td>킷 자체가 스캐폴딩(wiki-template·SOUL.example·install.sh) + plugins/ 구조</td>
-      <td><span class="chip ok">있음</span></td>
+      <td>킷 자체가 스캐폴딩(wiki-template·SOUL.example·install.sh) + plugins/ 구조 — 이 구조는 코딩용으로 쓸 수 있음</td>
+      <td><span class="chip part">부분</span></td>
       <td><b>2순위</b> — 규칙으로 승격: 새 기능은 플러그인으로만, 코어(bin/·SOUL)는 자기수정 금지 구역</td>
     </tr>
   </table>
 
-  <div class="note"><b>요지:</b> 헤르메스는 본업(구직 파이프라인)엔 7요소 중 4개가 이미 있는데, 사고가 난 <b>자기수정 경로</b>엔 하나도 안 걸려 있다. 그래서 적용은 "7개 이식"이 아니라 <b>①스냅샷→검증→롤백 게이트 + ⑦코어 동결</b> 두 개에 집중하고, 나머지는 파일 한두 개짜리 보강이면 된다.</div>
+  <div class="note"><b>요지:</b> 헤르메스의 위키·정리 스크립트·템플릿은 구직 <b>업무용</b> 장치라 하네스처럼 보여도 코딩용이 아니다. 헤르메스가 코딩(자기수정)을 할 때는 아무 장치 없이 맨몸 — 사고가 거기서 났다. 그래서 적용은 "7개 이식"이 아니라 <b>①스냅샷→검증→롤백 게이트 + ⑦코어 동결</b> 두 개에 집중하고, 나머지는 파일 한두 개짜리 보강이면 된다.</div>
 
   <div class="foot">출처: 스타 수 GitHub API 직접 조회 (2026-07-26) · 헤르메스는 hermes-agent-kit 로컬 실측 · 상세는 README 참조</div>
 </body>
