@@ -155,7 +155,7 @@
     <div class="t">🚫 그럼 <code>moai init</code>을 통째로 깔면? — 충돌 3종 <span style="font-weight:600;font-size:11px;color:#b91c1c">(정적 대조, v3.0.1 템플릿 실측 · 실기동 미검증)</span></div>
     <div class="clashrow">
       <div class="ci"><b>① 지시문 충돌</b>템플릿 CLAUDE.md의 "You are Master Agent MoAI" + <code>[ZONE:Frozen][HARD]</code> AskUserQuestion-Only ↔ 내 behavior.md의 "텍스트로 A안/B안 분기 제시". 프로젝트·유저 scope가 동시 로드돼 <b>비결정적으로 혼합</b></div>
-      <div class="ci"><b>② 훅 적층</b>템플릿이 이벤트 9종·훅 35개를 등록 — 내 글로벌과 <b>이벤트 5종이 중복</b>. Stop에서 내 async 기록 3종 위에 MoAI 차단형 게이트가 얹히는데 <b>실행 순서가 미정의</b></div>
+      <div class="ci"><b>② 훅 적층</b>템플릿이 이벤트 9종·훅 35개를 등록 — 내 글로벌과 <b>이벤트 5종이 중복.</b> Stop에서 내 async 기록 3종 위에 MoAI 차단형 게이트가 얹히는데 <b>실행 순서가 미정의</b></div>
       <div class="ci"><b>③ git·컨텍스트 철학 역행</b>Route A는 main 직행 자동 커밋(PR은 Route B 한정) ↔ 내 규칙 "커밋은 사용자가 요청할 때만". rules 대량 상시 주입 ↔ 내가 <code>paths:</code>로 다이어트한 방향과 정반대</div>
     </div>
   </div>
