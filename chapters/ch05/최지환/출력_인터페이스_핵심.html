@@ -1,0 +1,366 @@
+<title>출력 인터페이스 · 핵심 개념</title>
+<style>
+  :root {
+    --paper: #eef1f6;
+    --card: #ffffff;
+    --ink: #1b2434;
+    --ink-soft: #48566b;
+    --ink-faint: #6b7891;
+    --line: #d4dbe6;
+    --line-soft: #e3e8f0;
+    --accent: #35648f;
+    --accent-soft: #d9e6f2;
+    --amber: #b06d1f;
+    --amber-soft: #f6e7cf;
+    --good: #2f7d5b;
+    --good-soft: #d5ebe0;
+    --danger: #b34a52;
+    --danger-soft: #f2dadd;
+    --term-bg: #1d2735;
+    --term-ink: #d7e0ec;
+    --shadow: 0 1px 2px rgba(27,36,52,.06), 0 8px 24px rgba(27,36,52,.06);
+    --mono: "SF Mono", "JetBrains Mono", "D2Coding", "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141b26;
+      --card: #1c2431;
+      --ink: #e6ecf5;
+      --ink-soft: #a9b5c8;
+      --ink-faint: #7c899e;
+      --line: #303c4d;
+      --line-soft: #262f3d;
+      --accent: #6ba3d6;
+      --accent-soft: #22313f;
+      --amber: #d69b4e;
+      --amber-soft: #33291a;
+      --good: #6bbf95;
+      --good-soft: #1b2e26;
+      --danger: #d98088;
+      --danger-soft: #322023;
+      --term-bg: #0f1620;
+      --term-ink: #d7e0ec;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #eef1f6; --card: #ffffff; --ink: #1b2434; --ink-soft: #48566b; --ink-faint: #6b7891;
+    --line: #d4dbe6; --line-soft: #e3e8f0; --accent: #35648f; --accent-soft: #d9e6f2;
+    --amber: #b06d1f; --amber-soft: #f6e7cf; --good: #2f7d5b; --good-soft: #d5ebe0;
+    --danger: #b34a52; --danger-soft: #f2dadd; --term-bg: #1d2735; --term-ink: #d7e0ec;
+    --shadow: 0 1px 2px rgba(27,36,52,.06), 0 8px 24px rgba(27,36,52,.06);
+  }
+  :root[data-theme="dark"] {
+    --paper: #141b26; --card: #1c2431; --ink: #e6ecf5; --ink-soft: #a9b5c8; --ink-faint: #7c899e;
+    --line: #303c4d; --line-soft: #262f3d; --accent: #6ba3d6; --accent-soft: #22313f;
+    --amber: #d69b4e; --amber-soft: #33291a; --good: #6bbf95; --good-soft: #1b2e26;
+    --danger: #d98088; --danger-soft: #322023; --term-bg: #0f1620; --term-ink: #d7e0ec;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 96px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--accent); opacity: .6; }
+
+  h1 {
+    font-size: clamp(2.1rem, 6vw, 3.3rem);
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    font-weight: 800;
+  }
+  .lede { font-size: clamp(1.02rem, 2.2vw, 1.2rem); color: var(--ink-soft); max-width: 62ch; margin: 0; }
+
+  /* terminal mock status bar */
+  .term {
+    margin: 34px 0 8px;
+    background: var(--term-bg);
+    border-radius: 12px;
+    padding: 16px 18px 18px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .term-dots { display: flex; gap: 7px; margin-bottom: 13px; }
+  .term-dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .term-dots i:nth-child(1){ background:#e0625b; } .term-dots i:nth-child(2){ background:#e4b33f; } .term-dots i:nth-child(3){ background:#57b95a; }
+  .statusbar {
+    font-family: var(--mono);
+    font-size: .86rem;
+    color: var(--term-ink);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .statusbar .sep { color: #566173; padding: 0 6px; }
+  .c-model { color: #79b8f0; } .c-ver { color: #c7a4e6; } .c-cost { color: #e4b761; }
+  .c-style { color: #7fd0c0; } .c-add { color: #6bbf7f; } .c-q { color: #d98088; } .c-branch { color: #7fc99a; }
+  .term-cap { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); margin: 12px 2px 0; }
+
+  section { margin-top: clamp(44px, 7vw, 72px); }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 22px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .sec-num { font-family: var(--mono); font-size: .8rem; color: var(--accent); font-weight: 600; }
+  .sec-head h2 { font-size: clamp(1.35rem, 3.2vw, 1.75rem); margin: 0; letter-spacing: -.01em; font-weight: 750; }
+  .sec-head .en { font-family: var(--mono); font-size: .72rem; color: var(--ink-faint); letter-spacing: .04em; margin-left: auto; }
+
+  .grid { display: grid; gap: 16px; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 720px) { .cols-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 860px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .cols-4 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 20px 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { margin: 0 0 4px; font-size: 1.06rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+  .card .tag { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .card p { margin: 8px 0 0; font-size: .92rem; color: var(--ink-soft); }
+  .card .use { margin-top: 13px; padding-top: 11px; border-top: 1px dashed var(--line); font-size: .82rem; color: var(--ink-faint); }
+  .card .use b { color: var(--ink-soft); font-weight: 600; }
+
+  /* comparison table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: 12px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 520px; background: var(--card); }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--line-soft); }
+  thead th { background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 650; white-space: nowrap; }
+  td code, p code, li code, .card code { font-family: var(--mono); font-size: .85em; background: var(--line-soft); padding: 1px 6px; border-radius: 5px; color: var(--ink); }
+
+  /* callout */
+  .callout { background: var(--amber-soft); border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); border-radius: 12px; padding: 20px 22px; }
+  .callout .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .callout ul { margin: 10px 0 0; padding-left: 20px; }
+  .callout li { margin: 5px 0; font-size: .92rem; color: var(--ink-soft); }
+  .callout li b { color: var(--ink); }
+
+  /* flow */
+  .flow { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; font-family: var(--mono); }
+  .flow .node { background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; font-size: .82rem; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .flow .node small { color: var(--ink-faint); font-size: .68rem; display: block; margin-top: 3px; }
+  .flow .arrow { align-self: center; color: var(--accent); font-size: 1.1rem; }
+
+  /* keycaps */
+  kbd {
+    font-family: var(--mono);
+    font-size: .82rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 2px 8px;
+    color: var(--ink);
+    white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(0,0,0,.03);
+  }
+  .keyrow { display: grid; grid-template-columns: auto 1fr; gap: 12px 18px; align-items: baseline; }
+  .keyrow .kc { text-align: right; }
+  .keyrow .desc { color: var(--ink-soft); font-size: .92rem; }
+  .keyrow .desc b { color: var(--ink); font-weight: 600; }
+
+  .prefix-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 620px){ .prefix-grid { grid-template-columns: 1fr; } }
+  .prefix { background: var(--card); border: 1px solid var(--line-soft); border-radius: 11px; padding: 16px 18px; box-shadow: var(--shadow); display: flex; gap: 14px; align-items: flex-start; }
+  .prefix .sym { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; color: var(--accent); line-height: 1; width: 26px; text-align: center; flex-shrink: 0; }
+  .prefix .body b { display: block; font-size: .95rem; margin-bottom: 2px; }
+  .prefix .body span { font-size: .86rem; color: var(--ink-soft); }
+
+  .lead-note { font-size: .95rem; color: var(--ink-soft); margin: 0 0 20px; max-width: 64ch; }
+
+  footer { margin-top: 72px; padding-top: 22px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .74rem; color: var(--ink-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Chapter 05 · 클로드 코드 마스터</p>
+  <h1>출력 인터페이스</h1>
+  <p class="lede">클로드 코드가 <b>어떻게 응답하고, 무엇을 보여 주고, 어떻게 조작되는가</b>. 시스템 프롬프트를 바꾸는 출력 스타일, 세션을 실시간으로 비추는 상태 표시줄, 대화형 모드의 단축키까지 — 세 축의 핵심만 추렸다.</p>
+
+  <div class="term" role="img" aria-label="상태 표시줄 예시">
+    <div class="term-dots"><i></i><i></i><i></i></div>
+    <div class="statusbar">
+      <span>🤖 <span class="c-model">Opus 4.6</span></span><span class="sep">|</span>
+      <span>☀ <span class="c-ver">v2.1.37</span></span><span class="sep">|</span>
+      <span>💲<span class="c-cost">125/200K</span></span><span class="sep">|</span>
+      <span>🀫 <span class="c-style">R2-D2</span></span><span class="sep">|</span>
+      <span>📊 <span class="c-add">+0</span> <span class="c-add">M171</span> <span class="c-q">?63</span></span><span class="sep">|</span>
+      <span>🌿 <span class="c-branch">main</span></span>
+    </div>
+  </div>
+  <p class="term-cap">모델 · 버전 · 비용 · 출력 스타일 · 깃 상태 · 브랜치 &nbsp;—&nbsp; JSON을 stdin으로 받아 한 줄로 출력</p>
+
+  <!-- ===== 5-1 ===== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">5-1</span>
+      <h2>출력 스타일 커스터마이징</h2>
+      <span class="en">output style</span>
+    </div>
+    <p class="lead-note">출력 스타일은 형식만 바꾸는 게 아니라 <b>시스템 프롬프트 자체를 교체</b>한다. 기본이 아닌 스타일을 고르면 엔지니어링 지침이 제거되고 사용자 지침으로 대체된다 — 그래서 코딩을 넘어 문서·교육·분석 도구로 확장할 수 있다.</p>
+
+    <div class="grid cols-4">
+      <div class="card">
+        <h3>Default <span class="tag">기본</span></h3>
+        <p>소프트웨어 엔지니어링에 최적화된 기본 프롬프트. 간결한 응답.</p>
+        <p class="use"><b>언제</b> · 대부분의 일반 개발 작업</p>
+      </div>
+      <div class="card">
+        <h3>Proactive <span class="tag">실행</span></h3>
+        <p>멈춰 묻지 않고 합리적으로 가정해 바로 실행. 계획보다 행동 우선.</p>
+        <p class="use"><b>언제</b> · 자율 실행을 원할 때</p>
+      </div>
+      <div class="card">
+        <h3>Explanatory <span class="tag">설명</span></h3>
+        <p>작업을 완료하며 구현 선택의 이유를 교육적으로 함께 설명.</p>
+        <p class="use"><b>언제</b> · 코드 리뷰, 새 기술 스택 학습</p>
+      </div>
+      <div class="card">
+        <h3>Learning <span class="tag">학습</span></h3>
+        <p>인사이트만 주고 <code>TODO(human)</code> 마커로 구현은 개발자에게 넘김.</p>
+        <p class="use"><b>언제</b> · 직접 손으로 익히는 실습</p>
+      </div>
+    </div>
+
+    <p class="lead-note" style="margin-top:22px">전환은 <code>/config</code> → <b>Output style</b>(예전 <code>/output-style</code> 명령은 v2.1.91에서 제거). 세션 시작 시 한 번 로드되므로 변경 후 <code>/clear</code>나 새 세션에서 적용된다. 커스텀 스타일은 <code>~/.claude/output-styles/</code>(사용자) 또는 <code>.claude/output-styles/</code>(프로젝트)에 마크다운으로 저장하고, 팀 기본값은 <code>.claude/settings.json</code>의 <code>outputStyle</code> 키로 고정.</p>
+  </section>
+
+  <!-- ===== comparison ===== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">↔</span>
+      <h2>비슷하지만 다른 네 기능</h2>
+      <span class="en">응답 방식 vs 작업 실행</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>기능</th><th>동작</th><th>영향 범위</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Output Style</td><td>시스템 프롬프트 <b>완전 대체</b></td><td>메인 에이전트 응답 방식</td></tr>
+          <tr><td>CLAUDE.md</td><td>시스템 프롬프트 <b>추가</b></td><td>기본 지침 유지 + 컨텍스트</td></tr>
+          <tr><td>서브에이전트</td><td>독립 컨텍스트 작업 위임</td><td>메인과 분리된 실행</td></tr>
+          <tr><td>슬래시 명령어</td><td>저장된 프롬프트 실행</td><td>정해진 워크플로</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lead-note" style="margin-top:16px">핵심 구분 — <b>Output Style은 "어떻게 응답하는가"</b>, <b>슬래시 명령은 "무슨 작업을 하는가"</b>. 둘을 조합하면 특정 스타일로 특정 작업을 수행하는 일관된 워크플로가 된다.</p>
+  </section>
+
+  <!-- ===== hallucination ===== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">⚠</span>
+      <h2>환각 방지 지침</h2>
+      <span class="en">anti-hallucination</span>
+    </div>
+    <p class="lead-note">출력 스타일에 검증 규칙을 심으면 요청마다 반복하지 않아도 <b>시스템 수준에서 일관되게</b> 환각을 줄인다. 정확성이 중요한 기술 문서·API·코드 리뷰에서 특히 차이가 난다.</p>
+    <div class="callout">
+      <div class="k">▹ 세 가지 규칙</div>
+      <ul>
+        <li><b>출처 없는 URL 금지</b> — <code>WebFetch</code>/<code>WebSearch</code>가 실제 반환한 URL만 인용, 패턴으로 추측 생성 금지</li>
+        <li><b>확인 없는 버전·API 주장 금지</b> — 파일 시스템·문서 검색으로 검증한 것만</li>
+        <li><b>불확실성 표현 허용</b> — "검증이 필요합니다" 같은 표현을 명시적으로 열어 두기</li>
+      </ul>
+    </div>
+    <p class="lead-note" style="margin-top:16px">응답에 신뢰도 표시를 붙인다 — <code>[검증됨]</code> · <code>[가능성 높음]</code> · <code>[불확실]</code>, 그리고 출처: <code>(파일:줄번호)</code> / <code>(WebFetch URL)</code> / <code>(Context7 버전)</code>.</p>
+  </section>
+
+  <!-- ===== 5-2 ===== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">5-2</span>
+      <h2>상태 표시줄</h2>
+      <span class="en">statusline</span>
+    </div>
+    <p class="lead-note">스크립트가 클로드 코드로부터 <b>JSON을 stdin으로 받아</b> 가공하고 <b>한 줄을 stdout으로</b> 내보낸다. 대화가 갱신될 때마다 최대 300ms 간격으로 다시 그려지므로 — 스크립트는 빠를수록 좋다.</p>
+
+    <div class="flow" style="margin:6px 0 20px">
+      <div class="node">클로드 코드<small>JSON 데이터</small></div>
+      <span class="arrow">→</span>
+      <div class="node">stdin<small>model · cost · workspace</small></div>
+      <span class="arrow">→</span>
+      <div class="node">파싱 + 포매팅<small>bash / python / node</small></div>
+      <span class="arrow">→</span>
+      <div class="node">stdout<small>터미널 하단 한 줄</small></div>
+    </div>
+
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>설정</h3>
+        <p><code>/statusline</code>으로 안내 생성, 또는 <code>settings.json</code>에 <code>statusLine</code> 키(<code>type: command</code>)로 스크립트 경로 지정.</p>
+      </div>
+      <div class="card">
+        <h3>색상 · ANSI</h3>
+        <p>ANSI 이스케이프로 세그먼트 구분 — 추가 라인은 <span style="color:var(--good);font-weight:600">녹색</span>, 삭제는 <span style="color:var(--danger);font-weight:600">빨강</span>. <code>echo -e</code> 필수.</p>
+      </div>
+      <div class="card">
+        <h3>성능 · 캐싱</h3>
+        <p>깃 브랜치처럼 비싼 조회는 <code>/tmp</code>에 <b>5초 TTL</b>로 캐싱. 자주 실행되므로 최적화가 중요.</p>
+      </div>
+    </div>
+    <p class="lead-note" style="margin-top:18px"><b>안 보일 때</b> · 실행 권한(<code>chmod +x</code>) → stdout 출력 확인(stderr X) → <code>jq</code> 설치 여부(<code>brew install jq</code>). 수동 테스트는 목 JSON을 파이프로 흘려보내 확인.</p>
+  </section>
+
+  <!-- ===== 5-3 ===== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">5-3</span>
+      <h2>대화형 모드</h2>
+      <span class="en">interactive mode</span>
+    </div>
+
+    <p class="lead-note"><b>빠른 명령 접두사</b> — 첫 글자 하나로 입력의 처리 방식이 바뀐다.</p>
+    <div class="prefix-grid" style="margin-bottom:26px">
+      <div class="prefix"><span class="sym">#</span><div class="body"><b>메모리 단축키</b><span><code>CLAUDE.md</code>에 바로 기록되어 이후 세션에서도 참조</span></div></div>
+      <div class="prefix"><span class="sym">/</span><div class="body"><b>슬래시 명령</b><span><code>/help</code>·<code>/clear</code>·<code>/config</code> 및 커스텀 명령 호출</span></div></div>
+      <div class="prefix"><span class="sym">!</span><div class="body"><b>Bash 모드</b><span>승인 없이 셸 명령 직접 실행, 출력이 컨텍스트에 추가</span></div></div>
+      <div class="prefix"><span class="sym">@</span><div class="body"><b>파일 경로 멘션</b><span>경로 자동 완성으로 파일을 컨텍스트에 포함</span></div></div>
+    </div>
+
+    <p class="lead-note"><b>자주 쓰는 단축키</b></p>
+    <div class="keyrow">
+      <div class="kc"><kbd>Ctrl</kbd> + <kbd>C</kbd></div><div class="desc">현재 입력·생성 <b>취소</b> (표준 중단)</div>
+      <div class="kc"><kbd>Ctrl</kbd> + <kbd>R</kbd></div><div class="desc">역방향 <b>명령 기록 검색</b> — 디렉터리별 저장</div>
+      <div class="kc"><kbd>Ctrl</kbd> + <kbd>O</kbd></div><div class="desc">상세 출력 토글 — 도구 사용·실행 자세히</div>
+      <div class="kc"><kbd>Ctrl</kbd> + <kbd>B</kbd></div><div class="desc">현재 Bash 명령을 <b>백그라운드</b>로 (Tmux는 두 번)</div>
+      <div class="kc"><kbd>Esc</kbd> <kbd>Esc</kbd></div><div class="desc">코드·대화를 이전 지점으로 <b>되감기</b> (체크포인트)</div>
+      <div class="kc"><kbd>Tab</kbd></div><div class="desc"><b>확장 사고</b> 토글 — 복잡한 문제를 더 깊이</div>
+      <div class="kc"><kbd>Shift</kbd> + <kbd>Tab</kbd></div><div class="desc">권한 모드 전환 — 자동 수락 · 계획 · 일반</div>
+      <div class="kc"><kbd>Shift</kbd> + <kbd>Enter</kbd></div><div class="desc">다중 줄 입력 (<code>/terminal-setup</code> 후)</div>
+    </div>
+
+    <p class="lead-note" style="margin-top:24px"><b>백그라운드 Bash</b>는 빌드·테스트·개발 서버 같은 장기 실행을 비동기로 돌리고, 그동안 다른 파일을 분석하게 한다. 출력은 <code>BashOutput</code>으로 나중에 회수. <b>이미지</b>는 <kbd>Ctrl</kbd>+<kbd>V</kbd>로 붙여 넣어 에러 스크린샷·UI 목업을 그대로 전달.</p>
+  </section>
+
+  <footer>
+    <span>클로드 코드 마스터 · CHAPTER 05 요약</span>
+    <span>출력 스타일 → 상태 표시줄 → 대화형 모드</span>
+  </footer>
+
+</div>
